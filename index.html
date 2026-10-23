@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 工具 | 本機安全處理</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- 引入 PDF-lib 用於處理 PDF 結構 (分割, 合併, 旋轉, 刪除, 轉PDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <!-- 引入 JSZip 用於打包多個檔案 (下載 ZIP) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- 引入 PDF.js 用於 PDF 轉 JPG (渲染 PDF 為畫布) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #ffffff;
+            color: #111827;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .nav-item.active {
+            background-color: #000;
+            color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- 頂部導航列 -->
+    <header class="w-full pt-6 pb-4">
+        <nav class="flex flex-wrap justify-center items-center gap-2 md:gap-3 text-sm font-medium text-gray-600 max-w-6xl mx-auto px-4">
+            <a href="#" onclick="switchTool('split'); return false;" class="nav-item active flex items-center gap-1.5 px-4 py-2 rounded-full transition-all" data-target="split">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+                PDF 分割
+            </a>
+            <a href="#" onclick="switchTool('merge'); return false;" class="nav-item flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-gray-100 hover:text-black transition-all" data-target="merge">
+                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                PDF 合併
+            </a>
+            <a href="#" onclick="switchTool('compress'); return false;" class="nav-item flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-gray-100 hover:text-black transition-all" data-target="compress">
+                <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                PDF 壓縮
+            </a>
+            <a href="#" onclick="switchTool('img2pdf'); return false;" class="nav-item flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-gray-100 hover:text-black transition-all" data-target="img2pdf">
+                <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                圖片轉 PDF
+            </a>
+            <a href="#" onclick="switchTool('pdf2jpg'); return false;" class="nav-item flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-gray-100 hover:text-black transition-all" data-target="pdf2jpg">
+                <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                PDF 轉 JPG
+            </a>
+            <a href="#" onclick="switchTool('delete'); return false;" class="nav-item flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-gray-100 hover:text-black transition-all" data-target="delete">
+                <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                刪除頁面
+            </a>
+            <a href="#" onclick="switchTool('rotate'); return false;" class="nav-item flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-gray-100 hover:text-black transition-all" data-target="rotate">
+                <svg class="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                旋轉
+            </a>
+            <a href="#" onclick="switchTool('unlock'); return false;" class="nav-item flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-gray-100 hover:text-black transition-all" data-target="unlock">
+                <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
+                解除加密
+            </a>
+        </nav>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="flex-grow flex flex-col items-center px-4 w-full">
+        
+        <div class="text-center mt-12 mb-10 w-full">
+            <div class="inline-flex items-center gap-2 bg-[#F9FAFB] border border-gray-200 text-gray-700 text-xs px-4 py-1.5 rounded-full mb-6 font-medium">
+                <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                私密
+                <span class="text-gray-300 mx-1">|</span>
+                免費使用，檔案不會上載
+            </div>
+            <h1 id="page-title" class="text-5xl md:text-6xl font-bold text-gray-900 tracking-tight transition-all">PDF 分割工具</h1>
+        </div>
+
+        <div id="error-msg" class="hidden mb-6 bg-red-50 text-red-600 px-6 py-3 rounded-xl border border-red-200 text-sm font-medium flex items-center gap-2 shadow-sm max-w-2xl w-full">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span id="error-text">錯誤訊息</span>
+            <button onclick="hideError()" class="ml-auto text-red-400 hover:text-red-600"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+
+        <!-- 拖放與選擇檔案區 -->
+        <div id="drop-zone-container" class="max-w-4xl w-full mx-auto relative">
+            <div id="drop-zone" class="bg-[#FAFAFA] border-2 border-dashed border-gray-300 rounded-[2rem] p-12 md:p-24 flex flex-col items-center justify-center transition-all duration-200 ease-in-out hover:bg-gray-50 hover:border-gray-400 cursor-pointer w-full min-h-[420px]">
+                <div class="mb-8">
+                    <!-- 通用圖示 -->
+                    <svg width="72" height="72" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 10C16 7.79086 17.7909 6 20 6H28V58H20C17.7909 58 16 56.2091 16 54V10Z" stroke="#374151" stroke-width="2"/>
+                        <path d="M48 10C48 7.79086 46.2091 6 44 6H36V58H44C46.2091 58 48 56.2091 48 54V10Z" stroke="#374151" stroke-width="2"/>
+                        <line x1="32" y1="2" x2="32" y2="62" stroke="#EF4444" stroke-width="2.5" stroke-dasharray="5 5"/>
+                    </svg>
+                </div>
+                <h2 id="drop-text" class="text-3xl md:text-4xl font-bold mb-10 text-gray-900 pointer-events-none">將檔案拖放至此</h2>
+                <button class="bg-[#111] text-white px-8 py-3.5 rounded-full font-medium text-lg hover:bg-gray-800 transition-colors flex items-center gap-2 shadow-lg" onclick="event.stopPropagation(); document.getElementById('file-upload').click()">
+                    <span id="upload-btn-text">選擇 PDF 檔案</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+                <input type="file" id="file-upload" class="hidden" accept="application/pdf">
+            </div>
+        </div>
+
+        <!-- 設定與處理區 -->
+        <div id="processing-zone" class="hidden max-w-2xl w-full mx-auto flex flex-col items-center">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-3xl p-8 w-full">
+                <!-- 檔案資訊區 -->
+                <div class="flex items-start justify-between mb-6 pb-6 border-b border-gray-100">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-blue-50 p-3 rounded-2xl text-blue-500">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                        </div>
+                        <div class="overflow-hidden">
+                            <h3 class="text-lg font-bold text-gray-800 truncate max-w-[250px] md:max-w-md" id="file-name" title="filename"></h3>
+                            <p class="text-sm text-gray-500 mt-1" id="file-meta">處理準備中...</p>
+                        </div>
+                    </div>
+                    <button onclick="resetApp()" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <!-- 動態載入的各工具設定面板 -->
+                <div id="tool-configs" class="space-y-5">
+                    
+                    <!-- 分割設定 -->
+                    <div id="config-split" class="tool-config hidden space-y-4">
+                        <h4 class="font-semibold text-gray-800 mb-2">請選擇分割方式：</h4>
+                        <label class="relative flex items-start p-4 cursor-pointer border border-black bg-gray-50 rounded-2xl transition-colors" id="label-range">
+                            <div class="flex items-center h-5"><input type="radio" name="split_mode" value="range" class="w-5 h-5 text-black border-gray-300 focus:ring-black" checked onchange="toggleSplitMode()"></div>
+                            <div class="ml-3 flex-1">
+                                <span class="block text-sm font-semibold text-gray-900">提取指定範圍</span>
+                                <div id="range-inputs" class="mt-3 flex items-center gap-3">
+                                    <div class="flex items-center gap-2 border border-gray-300 rounded-xl px-3 py-2 bg-white w-full">
+                                        <span class="text-sm text-gray-500 font-medium">從</span>
+                                        <input type="number" id="start-page" min="1" class="w-full text-center font-semibold focus:outline-none">
+                                    </div>
+                                    <span class="text-gray-400">至</span>
+                                    <div class="flex items-center gap-2 border border-gray-300 rounded-xl px-3 py-2 bg-white w-full">
+                                        <span class="text-sm text-gray-500 font-medium">到</span>
+                                        <input type="number" id="end-page" min="1" class="w-full text-center font-semibold focus:outline-none">
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="relative flex items-start p-4 cursor-pointer border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors" id="label-all">
+                            <div class="flex items-center h-5"><input type="radio" name="split_mode" value="all" class="w-5 h-5 text-black border-gray-300 focus:ring-black" onchange="toggleSplitMode()"></div>
+                            <div class="ml-3 flex-1">
+                                <span class="block text-sm font-semibold text-gray-900">分割每一頁</span>
+                                <span class="block text-sm text-gray-500 mt-1">將每一頁獨立為單獨的 PDF 並打包為 ZIP。</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- 合併設定 -->
+                    <div id="config-merge" class="tool-config hidden">
+                        <h4 class="font-semibold text-gray-800 mb-2">待合併檔案列表：</h4>
+                        <ul id="merge-file-list" class="space-y-2 max-h-48 overflow-y-auto pr-2"></ul>
+                    </div>
+
+                    <!-- 旋轉設定 -->
+                    <div id="config-rotate" class="tool-config hidden">
+                        <h4 class="font-semibold text-gray-800 mb-2">選擇旋轉角度 (套用至全文件)：</h4>
+                        <select id="rotate-degree" class="w-full border border-gray-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-black">
+                            <option value="90">順時針 90 度</option>
+                            <option value="180">旋轉 180 度</option>
+                            <option value="270">逆時針 90 度</option>
+                        </select>
+                    </div>
+
+                    <!-- 刪除頁面設定 -->
+                    <div id="config-delete" class="tool-config hidden">
+                        <h4 class="font-semibold text-gray-800 mb-2">輸入要刪除的頁碼：</h4>
+                        <input type="text" id="delete-pages-input" class="w-full border border-gray-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-black" placeholder="例如: 1, 3, 5-7">
+                        <p class="text-xs text-gray-500 mt-2">支援單一頁碼與範圍（如：2-5），以逗號分隔。</p>
+                    </div>
+                    
+                    <!-- 解除加密設定 -->
+                    <div id="config-unlock" class="tool-config hidden">
+                        <h4 class="font-semibold text-gray-800 mb-2">請輸入 PDF 密碼：</h4>
+                        <input type="password" id="unlock-password" class="w-full border border-gray-300 rounded-xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-black" placeholder="輸入文件密碼解鎖並移除密碼">
+                        <p class="text-xs text-gray-500 mt-2">我們不會儲存您的密碼，解鎖過程全在本機進行。</p>
+                    </div>
+
+                    <!-- PDF轉JPG設定 -->
+                    <div id="config-pdf2jpg" class="tool-config hidden">
+                        <h4 class="font-semibold text-gray-800 mb-2">轉換設定：</h4>
+                        <p class="text-sm text-gray-600 mb-2">將把 PDF 的每一頁渲染為高品質 JPG 圖片並打包成 ZIP 檔下載。</p>
+                    </div>
+
+                    <!-- 壓縮設定 -->
+                    <div id="config-compress" class="tool-config hidden">
+                        <h4 class="font-semibold text-gray-800 mb-2">壓縮設定：</h4>
+                        <p class="text-sm text-gray-600 mb-2">本機端壓縮會移除 PDF 冗餘資料及 Metadata。對於以圖片為主的 PDF，可能壓縮效果有限。</p>
+                    </div>
+                    
+                    <!-- 圖片轉PDF設定 (無需特別介面，直接顯示清單) -->
+                    <div id="config-img2pdf" class="tool-config hidden">
+                        <h4 class="font-semibold text-gray-800 mb-2">已選圖片：</h4>
+                        <ul id="img2pdf-list" class="space-y-2 max-h-48 overflow-y-auto pr-2"></ul>
+                    </div>
+
+                </div>
+
+                <div class="mt-8">
+                    <button id="execute-btn" class="w-full bg-[#111] text-white py-3.5 rounded-2xl font-semibold text-lg hover:bg-gray-800 transition-colors shadow-md flex items-center justify-center gap-2" onclick="processTask()">
+                        開始處理
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部特點列 -->
+        <div class="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mt-12 mb-8 text-sm text-gray-500">
+            <span class="flex items-center gap-1.5"><span class="text-gray-800 font-bold">✓ 檔案毋須上載</span> 100% 瀏覽器本機處理</span>
+            <span class="flex items-center gap-1.5"><span class="text-gray-800 font-bold">✓ 免費，毋須註冊</span> 沒有浮水印</span>
+            <span class="flex items-center gap-1.5"><span class="text-gray-800 font-bold">✓ 頁數不限</span> 效能視乎裝置配置</span>
+        </div>
+    </main>
+
+    <script>
+        // 初始化 PDF.js Worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        const { PDFDocument } = PDFLib;
+        let currentTool = 'split'; 
+        let multiFiles = []; 
+        let currentFile = null;
+        let currentFileBytes = null;
+        let totalPagesCount = 0;
+
+        const fileUploadInput = document.getElementById('file-upload');
+        const dropZone = document.getElementById('drop-zone');
+        
+        // 工具設定
+        const toolsConfig = {
+            'split': { title: 'PDF 分割工具', btnText: '選擇 PDF 檔案', accept: 'application/pdf', multiple: false },
+            'merge': { title: 'PDF 合併工具', btnText: '選擇多個 PDF 檔案', accept: 'application/pdf', multiple: true },
+            'compress': { title: 'PDF 壓縮工具', btnText: '選擇 PDF 檔案', accept: 'application/pdf', multiple: false },
+            'img2pdf': { title: '圖片轉 PDF', btnText: '選擇多張圖片', accept: 'image/jpeg, image/png', multiple: true },
+            'pdf2jpg': { title: 'PDF 轉 JPG', btnText: '選擇 PDF 檔案', accept: 'application/pdf', multiple: false },
+            'delete': { title: 'PDF 刪除頁面', btnText: '選擇 PDF 檔案', accept: 'application/pdf', multiple: false },
+            'rotate': { title: 'PDF 旋轉', btnText: '選擇 PDF 檔案', accept: 'application/pdf', multiple: false },
+            'unlock': { title: 'PDF 解除加密', btnText: '選擇加密的 PDF', accept: 'application/pdf', multiple: false }
+        };
+
+        // 綁定事件
+        fileUploadInput.addEventListener('change', handleFileSelect);
+        dropZone.addEventListener('click', () => fileUploadInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('bg-blue-50'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('bg-blue-50'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault(); dropZone.classList.remove('bg-blue-50');
+            if (e.dataTransfer.files.length > 0) handleFileSelect({ target: { files: e.dataTransfer.files } });
+        });
+
+        function switchTool(tool) {
+            currentTool = tool;
+            
+            // 更新 UI 導航
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active', 'bg-black', 'text-white');
+                if(!el.closest('.group')) el.classList.add('hover:bg-gray-100');
+            });
+            const activeEl = document.querySelector(`.nav-item[data-target="${tool}"]`);
+            if (activeEl) {
+                activeEl.classList.add('active', 'bg-black', 'text-white');
+                activeEl.classList.remove('hover:bg-gray-100');
+            }
+
+            // 更新文字與 Input 屬性
+            document.getElementById('page-title').textContent = toolsConfig[tool].title;
+            document.getElementById('upload-btn-text').textContent = toolsConfig[tool].btnText;
+            document.getElementById('drop-text').textContent = toolsConfig[tool].multiple ? '將多個檔案拖放至此' : '將檔案拖放至此';
+            fileUploadInput.multiple = toolsConfig[tool].multiple;
+            fileUploadInput.accept = toolsConfig[tool].accept;
+
+            resetApp();
+        }
+
+        async function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            hideError();
+            if (!files.length) return;
+
+            try {
+                if (toolsConfig[currentTool].multiple) {
+                    multiFiles = files;
+                    if (currentTool === 'merge' && files.length < 2) {
+                        showError('合併請至少選擇 2 個 PDF 檔案！'); return resetApp(false);
+                    }
+                    document.getElementById('file-name').textContent = `已選擇 ${files.length} 個檔案`;
+                    document.getElementById('file-meta').textContent = '準備處理...';
+                    
+                    const listId = currentTool === 'merge' ? 'merge-file-list' : 'img2pdf-list';
+                    const listEl = document.getElementById(listId);
+                    listEl.innerHTML = '';
+                    files.forEach((f, idx) => {
+                        listEl.innerHTML += `<li class="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border border-gray-200 truncate">${idx + 1}. ${f.name}</li>`;
+                    });
+                } else {
+                    currentFile = files[0];
+                    if (currentTool !== 'img2pdf' && currentFile.type !== 'application/pdf') {
+                        showError('請選擇有效的 PDF 檔案！'); return resetApp(false);
+                    }
+                    currentFileBytes = await currentFile.arrayBuffer();
+                    
+                    document.getElementById('file-name').textContent = currentFile.name;
+                    document.getElementById('file-name').title = currentFile.name;
+                    
+                    // 除了密碼解鎖外，預先解析頁數
+                    if (currentTool !== 'unlock') {
+                        try {
+                            const pdfDoc = await PDFDocument.load(currentFileBytes);
+                            totalPagesCount = pdfDoc.getPageCount();
+                            document.getElementById('file-meta').textContent = `共 ${totalPagesCount} 頁`;
+                            
+                            if (currentTool === 'split') {
+                                document.getElementById('start-page').value = 1;
+                                document.getElementById('start-page').max = totalPagesCount;
+                                document.getElementById('end-page').value = totalPagesCount;
+                                document.getElementById('end-page').max = totalPagesCount;
+                            }
+                        } catch (err) {
+                            if (err.message.includes('encrypted')) {
+                                showError('此檔案已被加密！請先使用「PDF 解除加密」工具。');
+                                return resetApp(false);
+                            }
+                            throw err;
+                        }
+                    } else {
+                        document.getElementById('file-meta').textContent = '加密文件準備解鎖';
+                    }
+                }
+
+                // UI 切換
+                document.getElementById('drop-zone-container').classList.add('hidden');
+                document.getElementById('processing-zone').classList.remove('hidden');
+                
+                document.querySelectorAll('.tool-config').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`config-${currentTool}`).classList.remove('hidden');
+                
+            } catch (err) {
+                console.error(err);
+                showError('無法讀取檔案！檔案可能已損壞。');
+                resetApp(false);
+            }
+        }
+
+        function toggleSplitMode() {
+            const mode = document.querySelector('input[name="split_mode"]:checked').value;
+            const labelRange = document.getElementById('label-range');
+            const labelAll = document.getElementById('label-all');
+            const rangeInputs = document.getElementById('range-inputs');
+            if (mode === 'range') {
+                labelRange.classList.add('border-black', 'bg-gray-50');
+                labelAll.classList.remove('border-black', 'bg-gray-50');
+                rangeInputs.style.opacity = '1';
+                document.getElementById('start-page').disabled = false;
+                document.getElementById('end-page').disabled = false;
+            } else {
+                labelAll.classList.add('border-black', 'bg-gray-50');
+                labelRange.classList.remove('border-black', 'bg-gray-50');
+                rangeInputs.style.opacity = '0.5';
+                document.getElementById('start-page').disabled = true;
+                document.getElementById('end-page').disabled = true;
+            }
+        }
+
+        async function processTask() {
+            hideError();
+            const btn = document.getElementById('execute-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 處理中...`;
+
+            try {
+                await new Promise(r => setTimeout(r, 50)); // 讓 UI 更新
+                let outBytes = null;
+                let outName = "output.pdf";
+                let outType = 'application/pdf';
+
+                if (currentTool === 'split') {
+                    const mode = document.querySelector('input[name="split_mode"]:checked').value;
+                    const pdfDoc = await PDFDocument.load(currentFileBytes);
+                    const cleanName = currentFile.name.replace(/\.[^/.]+$/, "");
+                    
+                    if (mode === 'range') {
+                        const start = parseInt(document.getElementById('start-page').value);
+                        const end = parseInt(document.getElementById('end-page').value);
+                        if (isNaN(start) || isNaN(end) || start < 1 || end > totalPagesCount || start > end) {
+                            throw new Error(`無效的頁碼範圍 (1 至 ${totalPagesCount})`);
+                        }
+                        const newPdf = await PDFDocument.create();
+                        const indices = Array.from({length: end - start + 1}, (_, i) => start - 1 + i);
+                        const copied = await newPdf.copyPages(pdfDoc, indices);
+                        copied.forEach(p => newPdf.addPage(p));
+                        outBytes = await newPdf.save();
+                        outName = `${cleanName}_${start}-${end}.pdf`;
+                    } else {
+                        const zip = new JSZip();
+                        for (let i = 0; i < totalPagesCount; i++) {
+                            const newPdf = await PDFDocument.create();
+                            const [page] = await newPdf.copyPages(pdfDoc, [i]);
+                            newPdf.addPage(page);
+                            const pBytes = await newPdf.save();
+                            zip.file(`${cleanName}_頁面_${i+1}.pdf`, pBytes);
+                        }
+                        outBytes = await zip.generateAsync({type: "blob"});
+                        outName = `${cleanName}_分割.zip`;
+                        outType = 'application/zip';
+                    }
+                } 
+                else if (currentTool === 'merge') {
+                    const mergedPdf = await PDFDocument.create();
+                    for (const file of multiFiles) {
+                        const buf = await file.arrayBuffer();
+                        const pdf = await PDFDocument.load(buf);
+                        const copied = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                        copied.forEach(p => mergedPdf.addPage(p));
+                    }
+                    outBytes = await mergedPdf.save();
+                    outName = `合併檔案_${Date.now()}.pdf`;
+                }
+                else if (currentTool === 'rotate') {
+                    const pdfDoc = await PDFDocument.load(currentFileBytes);
+                    const deg = parseInt(document.getElementById('rotate-degree').value);
+                    pdfDoc.getPages().forEach(p => {
+                        p.setRotation(PDFLib.degrees(p.getRotation().angle + deg));
+                    });
+                    outBytes = await pdfDoc.save();
+                    outName = currentFile.name.replace('.pdf', '_旋轉.pdf');
+                }
+                else if (currentTool === 'delete') {
+                    const pdfDoc = await PDFDocument.load(currentFileBytes);
+                    const input = document.getElementById('delete-pages-input').value.trim();
+                    let toDelete = new Set();
+                    input.split(',').forEach(p => {
+                        p = p.trim();
+                        if(p.includes('-')) {
+                            const [s, e] = p.split('-').map(Number);
+                            if(s && e && s <= e) for(let i=s; i<=e; i++) toDelete.add(i);
+                        } else if(Number(p)) toDelete.add(Number(p));
+                    });
+                    
+                    const sorted = Array.from(toDelete).sort((a,b) => b-a);
+                    if(sorted.length === 0) throw new Error("請輸入有效的頁碼");
+                    sorted.forEach(pageNum => {
+                        if (pageNum >= 1 && pageNum <= totalPagesCount) pdfDoc.removePage(pageNum - 1);
+                    });
+                    outBytes = await pdfDoc.save();
+                    outName = currentFile.name.replace('.pdf', '_已刪除.pdf');
+                }
+                else if (currentTool === 'unlock') {
+                    const pwd = document.getElementById('unlock-password').value;
+                    try {
+                        const pdfDoc = await PDFDocument.load(currentFileBytes, { password: pwd });
+                        outBytes = await pdfDoc.save(); // 儲存時自動移除密碼
+                        outName = currentFile.name.replace('.pdf', '_已解鎖.pdf');
+                    } catch (e) {
+                        throw new Error("密碼錯誤或無法解鎖");
+                    }
+                }
+                else if (currentTool === 'compress') {
+                    // 本機簡易壓縮：重建 PDF 以清理冗餘結構 (無法壓縮圖片本身)
+                    const pdfDoc = await PDFDocument.load(currentFileBytes);
+                    pdfDoc.setTitle(''); pdfDoc.setAuthor(''); pdfDoc.setSubject(''); // 清除 Meta
+                    outBytes = await pdfDoc.save({ useObjectStreams: false }); 
+                    outName = currentFile.name.replace('.pdf', '_壓縮.pdf');
+                }
+                else if (currentTool === 'img2pdf') {
+                    const pdfDoc = await PDFDocument.create();
+                    for (const file of multiFiles) {
+                        const buf = await file.arrayBuffer();
+                        let img;
+                        if (file.type === 'image/jpeg' || file.type === 'image/jpg') img = await pdfDoc.embedJpg(buf);
+                        else if (file.type === 'image/png') img = await pdfDoc.embedPng(buf);
+                        else continue;
+                        
+                        const page = pdfDoc.addPage([img.width, img.height]);
+                        page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+                    }
+                    outBytes = await pdfDoc.save();
+                    outName = `圖片轉換_${Date.now()}.pdf`;
+                }
+                else if (currentTool === 'pdf2jpg') {
+                    // 使用 PDF.js 渲染為圖片並打包 ZIP
+                    const zip = new JSZip();
+                    const cleanName = currentFile.name.replace(/\.[^/.]+$/, "");
+                    
+                    const loadingTask = pdfjsLib.getDocument({data: new Uint8Array(currentFileBytes)});
+                    const pdf = await loadingTask.promise;
+                    
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({ scale: 2.0 }); // 放大提高畫質
+                        const canvas = document.createElement('canvas');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+                        const ctx = canvas.getContext('2d');
+                        
+                        await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                        
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+                        zip.file(`${cleanName}_頁面_${i}.jpg`, blob);
+                    }
+                    outBytes = await zip.generateAsync({type: "blob"});
+                    outName = `${cleanName}_圖片.zip`;
+                    outType = 'application/zip';
+                }
+
+                if(outBytes) triggerDownload(outBytes, outName, outType);
+                
+                btn.classList.replace('bg-[#111]', 'bg-green-600');
+                btn.innerHTML = `✓ 處理完成！`;
+                setTimeout(() => { resetButton(btn, originalText); resetApp(); }, 2500);
+
+            } catch (e) {
+                console.error(e);
+                showError(e.message || "處理失敗，請確認設定或檔案格式。");
+                resetButton(btn, originalText);
+            }
+        }
+
+        function triggerDownload(data, filename, type) {
+            const blob = data instanceof Blob ? data : new Blob([data], { type: type });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function resetButton(btn, text) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-80', 'cursor-not-allowed', 'bg-green-600');
+            btn.classList.add('bg-[#111]');
+            btn.innerHTML = text;
+        }
+
+        function showError(msg) {
+            document.getElementById('error-text').textContent = msg;
+            document.getElementById('error-msg').classList.remove('hidden');
+        }
+
+        function hideError() { document.getElementById('error-msg').classList.add('hidden'); }
+
+        function resetApp(clearError = true) {
+            currentFile = null; currentFileBytes = null; multiFiles = []; totalPagesCount = 0;
+            fileUploadInput.value = '';
+            document.getElementById('processing-zone').classList.add('hidden');
+            document.getElementById('drop-zone-container').classList.remove('hidden');
+            if (clearError) hideError();
+            
+            // 清除輸入框
+            document.getElementById('delete-pages-input').value = '';
+            document.getElementById('unlock-password').value = '';
+        }
+    </script>
+</body>
+</html>
