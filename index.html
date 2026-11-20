@@ -14,8 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- 引入 PDF.js 用於渲染與解析 PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <!-- 引入 Tesseract.js 用於本機瀏覽器 OCR 文字辨識 -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
     <style>
         body {
@@ -65,6 +63,29 @@
             color: #15803d;
             font-weight: 600;
         }
+
+        /* 合併排位卡片拖曳樣式 */
+        .merge-card {
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+        }
+        .merge-card.dragging {
+            opacity: 0.45;
+            transform: scale(0.97);
+            border-color: #111827;
+        }
+        .merge-card.drag-over {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+            transform: translateY(-2px);
+        }
+
+        /* 分割頁面選擇卡片樣式 */
+        .split-card {
+            transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+        }
+        .split-card:hover {
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative">
@@ -111,10 +132,6 @@
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 14h6m0 0v6m0-6L3 21M20 10h-6m0 0V4m0 6l7-7"></path></svg>
                 <span data-i18n="tool_compress">壓縮 PDF</span>
             </a>
-            <a href="#" onclick="switchTool('ocr'); return false;" class="nav-item flex items-center gap-1.5 px-3.5 py-1.5 rounded-full hover:bg-gray-200/60 hover:text-black transition-all" data-target="ocr">
-                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" stroke-width="1.8"></rect><text x="12" y="14.5" text-anchor="middle" font-size="6.5" font-weight="700" fill="currentColor" stroke="none" font-family="Inter, sans-serif">OCR</text></svg>
-                <span>OCR PDF</span>
-            </a>
             <a href="#" onclick="switchTool('pdf2jpg'); return false;" class="nav-item flex items-center gap-1.5 px-3.5 py-1.5 rounded-full hover:bg-gray-200/60 hover:text-black transition-all" data-target="pdf2jpg">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <span data-i18n="tool_pdf2jpg">PDF 轉 JPG</span>
@@ -142,13 +159,11 @@
                         <li><button onclick="selectToolFromDrawer('rotate')" class="hover:text-black hover:underline font-medium text-left w-full" data-i18n="tool_rotate">旋轉 PDF</button></li>
                         <li><button onclick="selectToolFromDrawer('merge')" class="hover:text-black hover:underline font-medium text-left w-full" data-i18n="tool_merge">合併 PDF</button></li>
                         <li><button onclick="selectToolFromDrawer('split')" class="hover:text-black hover:underline font-medium text-left w-full" data-i18n="tool_split">分割 PDF</button></li>
-                        <li><button onclick="selectToolFromDrawer('crop')" class="hover:text-black hover:underline font-medium text-left w-full" data-i18n="tool_crop">裁切 PDF</button></li>
                         <li><button onclick="selectToolFromDrawer('watermark')" class="hover:text-black hover:underline font-medium text-left w-full" data-i18n="tool_watermark">加入浮水印</button></li>
                         <li><button onclick="selectToolFromDrawer('addimg')" class="hover:text-black hover:underline font-medium text-left w-full" data-i18n="tool_addimg">在 PDF 中加入影像</button></li>
                         <li><button onclick="selectToolFromDrawer('compressimg')" class="hover:text-black hover:underline font-medium text-left w-full" data-i18n="tool_compressimg">壓縮影像</button></li>
                         <li><button onclick="selectToolFromDrawer('compress')" class="hover:text-black hover:underline font-medium text-left w-full" data-i18n="tool_compress">壓縮 PDF</button></li>
                         <li><button onclick="selectToolFromDrawer('delete')" class="hover:text-black hover:underline font-medium text-left w-full" data-i18n="tool_delete">刪除頁面</button></li>
-                        <li><button onclick="selectToolFromDrawer('ocr')" class="hover:text-black hover:underline font-medium text-left w-full">OCR PDF</button></li>
                     </ul>
                 </div>
 
@@ -192,7 +207,7 @@
                 <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                 <span data-i18n="badge_private">私密</span>
                 <span class="text-gray-300 mx-1">|</span>
-                <span data-i18n="badge_no_upload">免費使用，檔案不會上載</span>
+                <span data-i18n="badge_no_upload">本機用/ 內聯用</span>
             </div>
             <h1 id="page-title" class="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight transition-all">PDF 編輯器</h1>
         </div>
@@ -451,8 +466,11 @@
                     </div>
                 </div>
 
-                <!-- 最右側：刪除選取物件 (垃圾桶) -->
-                <div class="pl-3 border-l border-gray-200 flex items-center">
+                <!-- 最右側：還原原文 / 刪除選取物件 -->
+                <div class="pl-3 border-l border-gray-200 flex items-center gap-1.5">
+                    <button id="ed-restore-text-btn" onclick="restoreSelectedTextElement()" class="hidden px-2.5 py-1 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition" title="還原為原本 PDF 文字">
+                        ↺ 還原原文
+                    </button>
                     <button id="ed-delete-obj-btn" onclick="deleteSelectedElement()" disabled class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400 rounded-lg transition" title="刪除選取元素 (Delete)">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
@@ -475,7 +493,7 @@
 
             <!-- 操作提示條 -->
             <div id="ed-hint-banner" class="bg-emerald-50/90 border-b border-emerald-100 text-emerald-800 text-xs px-4 py-1.5 text-center font-medium">
-                提示：直接點擊 PDF 原有文字（藍色虛線框），舊字會自動抹除並原地開啟文字框讓您直接更改內容。
+                提示：直接點擊頁面上的任何文字即可原地修改內容（自動保留原背景與底線）；清空文字即可直接刪除，按 Ctrl+Z 可隨時還原。
             </div>
 
             <!-- 中央 PDF 畫布捲動視窗 -->
@@ -485,10 +503,10 @@
         </div>
 
         <!-- ===================================================================== -->
-        <!-- 其他 19 項工具設定與處理區                                            -->
+        <!-- 其他工具設定與處理區                                                   -->
         <!-- ===================================================================== -->
-        <div id="processing-zone" class="hidden max-w-2xl w-full mx-auto flex flex-col items-center px-4">
-            <div class="bg-white border border-gray-200 shadow-sm rounded-3xl p-8 w-full">
+        <div id="processing-zone" class="hidden max-w-2xl w-full mx-auto flex flex-col items-center px-4 transition-all">
+            <div class="bg-white border border-gray-200 shadow-sm rounded-3xl p-6 sm:p-8 w-full">
                 <!-- 檔案資訊區 -->
                 <div class="flex items-start justify-between mb-6 pb-6 border-b border-gray-100">
                     <div class="flex items-center gap-4">
@@ -496,50 +514,129 @@
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                         </div>
                         <div class="overflow-hidden">
-                            <h3 class="text-lg font-bold text-gray-800 truncate max-w-[250px] md:max-w-md" id="file-name" title="filename"></h3>
+                            <h3 class="text-lg font-bold text-gray-800 truncate max-w-[230px] sm:max-w-md" id="file-name" title="filename"></h3>
                             <p class="text-sm text-gray-500 mt-1" id="file-meta">處理準備中...</p>
                         </div>
                     </div>
-                    <button onclick="resetApp()" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition">
+                    <button onclick="resetApp()" class="text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 p-2 rounded-full transition" title="重設並返回">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
 
                 <!-- 動態載入的各工具設定面板 -->
                 <div id="tool-configs" class="space-y-5">
-                    <!-- 分割設定 -->
+                    <!-- ========================================================= -->
+                    <!-- 分割設定：視覺化縮圖多選 + 頁碼範圍輸入 + 追加更多 PDF     -->
+                    <!-- ========================================================= -->
                     <div id="config-split" class="tool-config hidden space-y-4">
-                        <h4 class="font-semibold text-gray-800 mb-2" data-i18n="split_mode_label">請選擇分割方式：</h4>
-                        <label class="relative flex items-start p-4 cursor-pointer border border-black bg-gray-50 rounded-2xl transition-colors" id="label-range">
-                            <div class="flex items-center h-5"><input type="radio" name="split_mode" value="range" class="w-5 h-5 text-black border-gray-300 focus:ring-black" checked onchange="toggleSplitMode()"></div>
-                            <div class="ml-3 flex-1">
-                                <span class="block text-sm font-semibold text-gray-900" data-i18n="split_range">提取指定範圍</span>
-                                <div id="range-inputs" class="mt-3 flex items-center gap-3">
-                                    <div class="flex items-center gap-2 border border-gray-300 rounded-xl px-3 py-2 bg-white w-full">
-                                        <span class="text-sm text-gray-500 font-medium" data-i18n="split_from">從</span>
-                                        <input type="number" id="start-page" min="1" class="w-full text-center font-semibold focus:outline-none">
-                                    </div>
-                                    <span class="text-gray-400">-</span>
-                                    <div class="flex items-center gap-2 border border-gray-300 rounded-xl px-3 py-2 bg-white w-full">
-                                        <span class="text-sm text-gray-500 font-medium" data-i18n="split_to">到</span>
-                                        <input type="number" id="end-page" min="1" class="w-full text-center font-semibold focus:outline-none">
-                                    </div>
+                        <!-- 頂部快捷選取與新增 PDF 工具列 -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <button type="button" onclick="applySplitQuickSelect('all')" class="px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-semibold text-gray-800 transition" data-i18n="split_select_all">全選</button>
+                                <button type="button" onclick="applySplitQuickSelect('none')" class="px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 transition" data-i18n="split_clear_all">取消全選</button>
+                                <button type="button" onclick="applySplitQuickSelect('invert')" class="px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 transition" data-i18n="split_invert">反選</button>
+                                <button type="button" onclick="applySplitQuickSelect('odd')" class="px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 transition" data-i18n="split_odd">單數頁</button>
+                                <button type="button" onclick="applySplitQuickSelect('even')" class="px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 transition" data-i18n="split_even">雙數頁</button>
+                            </div>
+
+                            <div class="flex items-center gap-2 self-start sm:self-auto">
+                                <button type="button" onclick="document.getElementById('split-add-more-input').click()" class="px-3.5 py-1.5 bg-black hover:bg-gray-800 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                                    <span data-i18n="merge_add_more">加入更多 PDF</span>
+                                </button>
+                                <input type="file" id="split-add-more-input" class="hidden" accept="application/pdf" multiple onchange="handleAddMoreSplitFiles(event)">
+                            </div>
+                        </div>
+
+                        <!-- 已載入檔案標籤列 -->
+                        <div id="split-files-bar" class="flex flex-wrap items-center gap-2"></div>
+
+                        <!-- 頁碼輸入與輸出方式設定區 -->
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-white p-4 rounded-2xl border border-gray-200 shadow-2xs">
+                            <!-- 雙向同步頁碼範圍輸入 -->
+                            <div class="md:col-span-7 space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <label for="split-pages-input" class="text-xs font-bold text-gray-700" data-i18n="split_input_label">輸入或點選需要版面（支援頁碼與範圍）：</label>
+                                    <span id="split-selected-badge" class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">已選 0 頁</span>
+                                </div>
+                                <input type="text" id="split-pages-input" oninput="handleSplitInputChange(this.value)" onblur="syncSplitInputFromSelection()" class="w-full border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-medium bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black transition" data-i18n-placeholder="split_input_placeholder" placeholder="例如：1-3, 5, 8-10">
+                            </div>
+
+                            <!-- 輸出檔案格式選擇 -->
+                            <div class="md:col-span-5 space-y-1.5">
+                                <span class="block text-xs font-bold text-gray-700" data-i18n="split_output_label">匯出方式：</span>
+                                <div class="grid grid-cols-1 gap-1.5">
+                                    <label class="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 text-xs font-medium text-gray-800">
+                                        <input type="radio" name="split_output_mode" value="single" class="text-black focus:ring-black" checked>
+                                        <span data-i18n="split_out_single">提取為單一 PDF 檔案</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 text-xs font-medium text-gray-800">
+                                        <input type="radio" name="split_output_mode" value="zip" class="text-black focus:ring-black">
+                                        <span data-i18n="split_out_zip">每頁獨立為單獨 PDF (ZIP)</span>
+                                    </label>
                                 </div>
                             </div>
-                        </label>
-                        <label class="relative flex items-start p-4 cursor-pointer border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors" id="label-all">
-                            <div class="flex items-center h-5"><input type="radio" name="split_mode" value="all" class="w-5 h-5 text-black border-gray-300 focus:ring-black" onchange="toggleSplitMode()"></div>
-                            <div class="ml-3 flex-1">
-                                <span class="block text-sm font-semibold text-gray-900" data-i18n="split_all">分割每一頁</span>
-                                <span class="block text-sm text-gray-500 mt-1" data-i18n="split_all_desc">將每一頁獨立為單獨的 PDF 並打包為 ZIP。</span>
+                        </div>
+
+                        <!-- 操作說明提示 -->
+                        <div class="flex items-center justify-between text-xs text-gray-500 px-1">
+                            <span data-i18n="split_hint">💡 點擊下方頁面卡片即可勾選/取消（按住 Shift 點擊可連續選取），或直接將新 PDF 拖入下方區域。</span>
+                            <span id="split-loading-badge" class="hidden text-emerald-600 font-semibold animate-pulse">正在載入頁面縮圖...</span>
+                        </div>
+
+                        <!-- 所有頁面縮圖網格區 (支援直接拖入更多 PDF) -->
+                        <div id="split-drop-area" class="bg-[#F8FAFC] border-2 border-dashed border-gray-200 rounded-2xl p-4 min-h-[260px] transition-colors">
+                            <div id="split-visual-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
+                                <!-- 動態生成所有 PDF 頁面縮圖卡片 -->
                             </div>
-                        </label>
+                        </div>
                     </div>
 
-                    <!-- 合併設定 -->
-                    <div id="config-merge" class="tool-config hidden">
-                        <h4 class="font-semibold text-gray-800 mb-2" data-i18n="merge_list_label">待合併檔案列表：</h4>
-                        <ul id="merge-file-list" class="space-y-2 max-h-48 overflow-y-auto pr-2"></ul>
+                    <!-- ========================================================= -->
+                    <!-- 合併設定：視覺化自由排位系統 (支援檔案排位 & 逐頁自由排位)  -->
+                    <!-- ========================================================= -->
+                    <div id="config-merge" class="tool-config hidden space-y-4">
+                        <!-- 頂部控制與模式切換列 -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50 p-3.5 rounded-2xl border border-gray-200">
+                            <!-- 模式切換膠囊 -->
+                            <div class="inline-flex bg-gray-200/80 p-1 rounded-xl self-start">
+                                <button type="button" id="merge-mode-file-btn" onclick="switchMergeOrderMode('file')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-white text-gray-900 shadow-xs transition">
+                                    <span data-i18n="merge_mode_file">依檔案排位</span>
+                                </button>
+                                <button type="button" id="merge-mode-page-btn" onclick="switchMergeOrderMode('page')" class="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 transition">
+                                    <span data-i18n="merge_mode_page">逐頁自由排位</span>
+                                </button>
+                            </div>
+
+                            <!-- 快捷排序與新增檔案按鈕 -->
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button type="button" onclick="sortMergeItemsByName()" class="px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 transition flex items-center gap-1" title="依檔名 A→Z 排序">
+                                    <span>A→Z</span>
+                                </button>
+                                <button type="button" onclick="reverseMergeItems()" class="px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-xl text-xs font-medium text-gray-700 transition flex items-center gap-1" title="反轉目前順序">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
+                                    <span data-i18n="merge_reverse">反轉順序</span>
+                                </button>
+                                <button type="button" onclick="document.getElementById('merge-add-more-input').click()" class="px-3.5 py-1.5 bg-black hover:bg-gray-800 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                                    <span data-i18n="merge_add_more">加入更多 PDF</span>
+                                </button>
+                                <input type="file" id="merge-add-more-input" class="hidden" accept="application/pdf" multiple onchange="handleAddMoreMergeFiles(event)">
+                            </div>
+                        </div>
+
+                        <!-- 操作說明提示 -->
+                        <div class="flex items-center justify-between text-xs text-gray-500 px-1">
+                            <span id="merge-order-hint" data-i18n="merge_drag_hint">💡 拖曳卡片或點擊左右箭頭即可自由調整合併順序（支援直接將新 PDF 拖入下方區域）。</span>
+                            <span id="merge-loading-badge" class="hidden text-emerald-600 font-semibold animate-pulse">正在載入頁面縮圖...</span>
+                        </div>
+
+                        <!-- 可拖曳排位視覺卡片網格 (同時支援直接拖入更多 PDF) -->
+                        <div id="merge-drop-area" class="bg-[#F8FAFC] border-2 border-dashed border-gray-200 rounded-2xl p-4 min-h-[260px] transition-colors">
+                            <div id="merge-visual-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
+                                <!-- 動態生成可拖曳 PDF / 頁面卡片 -->
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 旋轉設定 -->
@@ -588,32 +685,6 @@
                     <div id="config-img2pdf" class="tool-config hidden">
                         <h4 class="font-semibold text-gray-800 mb-2" data-i18n="img2pdf_label">已選圖片：</h4>
                         <ul id="img2pdf-list" class="space-y-2 max-h-48 overflow-y-auto pr-2"></ul>
-                    </div>
-
-                    <!-- 裁切 PDF 設定 -->
-                    <div id="config-crop" class="tool-config hidden space-y-4">
-                        <h4 class="font-semibold text-gray-800">設定四邊裁切比例 (%)：</h4>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200">
-                                <label class="block text-xs text-gray-500 mb-1">上邊距 (%)</label>
-                                <input type="number" id="crop-top" value="5" min="0" max="45" oninput="updateCropPreview()" class="w-full font-semibold text-center bg-white border border-gray-300 rounded-lg py-1">
-                            </div>
-                            <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200">
-                                <label class="block text-xs text-gray-500 mb-1">下邊距 (%)</label>
-                                <input type="number" id="crop-bottom" value="5" min="0" max="45" oninput="updateCropPreview()" class="w-full font-semibold text-center bg-white border border-gray-300 rounded-lg py-1">
-                            </div>
-                            <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200">
-                                <label class="block text-xs text-gray-500 mb-1">左邊距 (%)</label>
-                                <input type="number" id="crop-left" value="5" min="0" max="45" oninput="updateCropPreview()" class="w-full font-semibold text-center bg-white border border-gray-300 rounded-lg py-1">
-                            </div>
-                            <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200">
-                                <label class="block text-xs text-gray-500 mb-1">右邊距 (%)</label>
-                                <input type="number" id="crop-right" value="5" min="0" max="45" oninput="updateCropPreview()" class="w-full font-semibold text-center bg-white border border-gray-300 rounded-lg py-1">
-                            </div>
-                        </div>
-                        <div class="flex justify-center bg-gray-100 p-4 rounded-2xl border border-gray-200">
-                            <canvas id="crop-preview-canvas" class="max-h-64 shadow-md bg-white"></canvas>
-                        </div>
                     </div>
 
                     <!-- 加入浮水印設定 -->
@@ -675,37 +746,6 @@
                         <ul id="compressimg-list" class="space-y-2 max-h-40 overflow-y-auto"></ul>
                     </div>
 
-                    <!-- OCR PDF 設定與結果區 -->
-                    <div id="config-ocr" class="tool-config hidden space-y-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-800 mb-1.5">選擇辨識語言：</label>
-                            <select id="ocr-lang-select" class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm bg-white">
-                                <option value="chi_tra+eng">繁體中文 + 英文 (Traditional Chinese + English)</option>
-                                <option value="chi_sim+eng">简体中文 + 英文 (Simplified Chinese + English)</option>
-                                <option value="eng">僅英文 (English Only)</option>
-                            </select>
-                        </div>
-                        <div id="ocr-progress-box" class="hidden bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-                            <div class="flex justify-between text-xs font-semibold text-emerald-800 mb-1.5">
-                                <span id="ocr-status-text">正在初始化 OCR 引擎...</span>
-                                <span id="ocr-pct-text">0%</span>
-                            </div>
-                            <div class="w-full bg-emerald-200 rounded-full h-2">
-                                <div id="ocr-progress-bar" class="bg-emerald-600 h-2 rounded-full transition-all" style="width: 0%"></div>
-                            </div>
-                        </div>
-                        <div id="ocr-result-box" class="hidden space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-xs font-bold text-gray-700">OCR 辨識提取結果：</span>
-                                <div class="flex gap-2">
-                                    <button onclick="copyOcrText()" class="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-lg font-medium">複製全文</button>
-                                    <button onclick="downloadOcrTxt()" class="text-xs bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-1 rounded-lg font-medium">下載 .TXT</button>
-                                </div>
-                            </div>
-                            <textarea id="ocr-output-text" rows="6" class="w-full border border-gray-300 rounded-xl p-3 text-xs font-mono bg-gray-50"></textarea>
-                        </div>
-                    </div>
-
                     <!-- PDF 轉 PNG 說明面板 -->
                     <div id="config-pdf2png" class="tool-config hidden">
                         <p class="text-sm text-gray-600">將 PDF 每一頁轉換為無損高畫質 <strong>PNG</strong> 圖片（多頁自動打包為 ZIP）。</p>
@@ -715,7 +755,7 @@
                 <!-- 本機處理格式與限制提示框 -->
                 <div class="mt-5 bg-amber-50/80 border border-amber-200/80 rounded-2xl p-3.5 text-xs text-amber-900 leading-relaxed">
                     <span class="font-bold">💡 本機瀏覽器處理提示：</span>
-                    檔案全程於瀏覽器本機處理，不會上載至伺服器。若純掃描圖片 PDF 需提取文字，建議使用 <strong>OCR PDF</strong>。
+                    檔案全程於瀏覽器本機處理，不會上載至伺服器，確保您的文件私密與安全。
                 </div>
 
                 <div class="mt-6">
@@ -729,7 +769,7 @@
 
         <!-- 底部特點列 -->
         <div id="footer-features" class="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mt-12 mb-8 text-sm text-gray-500 px-4">
-            <span class="flex items-center gap-1.5"><span class="text-gray-800 font-bold" data-i18n="footer_1_1">✓ 檔案毋須上載</span> <span data-i18n="footer_1_2">100% 瀏覽器本機處理</span></span>
+            <span class="flex items-center gap-1.5"><span class="text-gray-800 font-bold" data-i18n="footer_1_1">✓ 本機用/ 內聯用</span> <span data-i18n="footer_1_2">100% 瀏覽器本機處理</span></span>
             <span class="flex items-center gap-1.5"><span class="text-gray-800 font-bold" data-i18n="footer_2_1">✓ 免費，毋須註冊</span> <span data-i18n="footer_2_2">沒有浮水印</span></span>
             <span class="flex items-center gap-1.5"><span class="text-gray-800 font-bold" data-i18n="footer_3_1">✓ 頁數不限</span> <span data-i18n="footer_3_2">效能視乎裝置配置</span></span>
         </div>
@@ -843,11 +883,11 @@
             'zh-HK': {
                 'nav_all_tools': '全部工具', 'cat_edit_pdf': '編輯 PDF', 'cat_from_pdf': '從 PDF 轉換', 'cat_to_pdf': '轉換為 PDF',
                 'tool_editor': '編輯 PDF', 'tool_sign': '簽署 PDF', 'tool_rotate': '旋轉 PDF', 'tool_merge': '合併 PDF', 'tool_split': '分割 PDF',
-                'tool_crop': '裁切 PDF', 'tool_watermark': '加入浮水印', 'tool_addimg': '在 PDF 中加入影像', 'tool_compressimg': '壓縮影像',
+                'tool_watermark': '加入浮水印', 'tool_addimg': '在 PDF 中加入影像', 'tool_compressimg': '壓縮影像',
                 'tool_compress': '壓縮 PDF', 'tool_delete': '刪除頁面',
                 'tool_pdf2jpg': 'PDF 轉 JPG', 'tool_pdf2png': 'PDF 轉 PNG',
                 'tool_jpg2pdf': 'JPG 轉 PDF', 'tool_png2pdf': 'PNG 轉 PDF',
-                'badge_private': '私密', 'badge_no_upload': '免費使用，檔案不會上載',
+                'badge_private': '私密', 'badge_no_upload': '本機用/ 內聯用',
                 'drop_single': '將檔案拖放至此', 'drop_multi': '將多個檔案拖放至此',
                 'btn_select_pdf': '選擇 PDF 檔案', 'btn_select_pdfs': '選擇多個 PDF 檔案', 'btn_select_imgs': '選擇圖片檔案',
                 'ed_create_blank': '建立空白 PDF', 'ed_download': '下載 PDF', 'ed_add_page': '新增頁面', 'ed_blank_page': '空白頁', 'ed_from_file': '從檔案',
@@ -859,22 +899,26 @@
                 'ed_clear': '清除重寫', 'ed_cancel': '取消', 'ed_insert': '插入', 'ed_stamp_title': '選擇或自訂印章',
                 'ed_custom_stamp': '自訂印章文字', 'ed_link_title': '新增超連結區域', 'ed_note_title': '新增便利貼備註', 'ed_done': '完成',
                 'status_preparing': '處理準備中...', 'status_selected_files': '已選擇 {n} 個檔案', 'status_total_pages': '共 {n} 頁', 'status_processing': '處理中...', 'status_done': '✓ 處理完成！',
-                'split_mode_label': '請選擇分割方式：', 'split_range': '提取指定範圍', 'split_from': '從', 'split_to': '到', 'split_all': '分割每一頁', 'split_all_desc': '將每一頁獨立為單獨的 PDF 並打包為 ZIP。',
-                'merge_list_label': '待合併檔案列表：', 'rotate_label': '選擇旋轉角度 (套用至全文件)：', 'rot_90_cw': '順時針 90 度', 'rot_180': '旋轉 180 度', 'rot_90_ccw': '逆時針 90 度',
+                'split_select_all': '全選', 'split_clear_all': '取消全選', 'split_invert': '反選', 'split_odd': '單數頁', 'split_even': '雙數頁',
+                'split_input_label': '輸入或點選需要版面（支援頁碼與範圍）：', 'split_input_placeholder': '例如：1-3, 5, 8-10',
+                'split_output_label': '匯出方式：', 'split_out_single': '提取為單一 PDF 檔案', 'split_out_zip': '每頁獨立為單獨 PDF (ZIP)',
+                'split_hint': '💡 點擊下方頁面卡片即可勾選/取消（按住 Shift 點擊可連續選取），或直接將新 PDF 拖入下方區域。',
+                'merge_list_label': '待合併檔案列表：', 'merge_mode_file': '依檔案排位', 'merge_mode_page': '逐頁自由排位', 'merge_reverse': '反轉順序', 'merge_add_more': '加入更多 PDF', 'merge_drag_hint': '💡 拖曳卡片或點擊左右箭頭即可自由調整合併順序（支援直接將新 PDF 拖入下方區域）。',
+                'rotate_label': '選擇旋轉角度 (套用至全文件)：', 'rot_90_cw': '順時針 90 度', 'rot_180': '旋轉 180 度', 'rot_90_ccw': '逆時針 90 度',
                 'del_label': '輸入要刪除的頁碼：', 'del_placeholder': '例如: 1, 3, 5-7', 'del_desc': '支援單一頁碼與範圍（如：2-5），以逗號分隔。',
                 'pdf2jpg_label': '轉換設定：', 'pdf2jpg_desc': '將把 PDF 的每一頁渲染為高品質 JPG 圖片並打包成 ZIP 檔下載。',
                 'compress_label': '選擇壓縮模式：', 'img2pdf_label': '已選圖片：', 'btn_process': '開始處理',
-                'footer_1_1': '✓ 檔案毋須上載', 'footer_1_2': '100% 瀏覽器本機處理', 'footer_2_1': '✓ 免費，毋須註冊', 'footer_2_2': '沒有浮水印', 'footer_3_1': '✓ 頁數不限', 'footer_3_2': '效能視乎裝置配置',
-                'err_need_2_files': '合併請至少選擇 2 個 PDF 檔案！', 'err_invalid_pdf': '請選擇有效的 PDF 檔案！', 'err_encrypted': '此檔案已被加密！本工具無法處理加密檔案。', 'err_read_fail': '無法讀取檔案！檔案格式不支援或已損壞。', 'err_invalid_range': '無效的頁碼範圍 (1 至 {n})', 'err_invalid_page_num': '請輸入有效的頁碼', 'err_process_fail': '處理失敗，請確認設定或檔案格式。'
+                'footer_1_1': '✓ 本機用/ 內聯用', 'footer_1_2': '100% 瀏覽器本機處理', 'footer_2_1': '✓ 免費，毋須註冊', 'footer_2_2': '沒有浮水印', 'footer_3_1': '✓ 頁數不限', 'footer_3_2': '效能視乎裝置配置',
+                'err_need_2_files': '合併請至少保留 2 個 PDF 檔案或 2 個頁面！', 'err_no_split_pages': '請至少選擇或輸入 1 個需要分割的版面！', 'err_invalid_pdf': '請選擇有效的 PDF 檔案！', 'err_encrypted': '此檔案已被加密！本工具無法處理加密檔案。', 'err_read_fail': '無法讀取檔案！檔案格式不支援或已損壞。', 'err_invalid_range': '無效的頁碼範圍 (1 至 {n})', 'err_invalid_page_num': '請輸入有效的頁碼', 'err_process_fail': '處理失敗，請確認設定或檔案格式。'
             },
             'zh-CN': {
                 'nav_all_tools': '全部工具', 'cat_edit_pdf': '编辑 PDF', 'cat_from_pdf': '从 PDF 转换', 'cat_to_pdf': '转换为 PDF',
                 'tool_editor': '编辑 PDF', 'tool_sign': '签署 PDF', 'tool_rotate': '旋转 PDF', 'tool_merge': '合并 PDF', 'tool_split': '分割 PDF',
-                'tool_crop': '裁剪 PDF', 'tool_watermark': '添加水印', 'tool_addimg': '在 PDF 中添加图像', 'tool_compressimg': '压缩图像',
+                'tool_watermark': '添加水印', 'tool_addimg': '在 PDF 中添加图像', 'tool_compressimg': '压缩图像',
                 'tool_compress': '压缩 PDF', 'tool_delete': '删除页面',
                 'tool_pdf2jpg': 'PDF 转 JPG', 'tool_pdf2png': 'PDF 转 PNG',
                 'tool_jpg2pdf': 'JPG 转 PDF', 'tool_png2pdf': 'PNG 转 PDF',
-                'badge_private': '私密', 'badge_no_upload': '免费使用，文件不会上传',
+                'badge_private': '私密', 'badge_no_upload': '本机用/ 内联用',
                 'drop_single': '将文件拖放至此', 'drop_multi': '将多个文件拖放至此',
                 'btn_select_pdf': '选择 PDF 文件', 'btn_select_pdfs': '选择多个 PDF 文件', 'btn_select_imgs': '选择图片文件',
                 'ed_create_blank': '新建空白 PDF', 'ed_download': '下载 PDF', 'ed_add_page': '添加页面', 'ed_blank_page': '空白页', 'ed_from_file': '从文件',
@@ -886,22 +930,26 @@
                 'ed_clear': '清除重写', 'ed_cancel': '取消', 'ed_insert': '插入', 'ed_stamp_title': '选择或自定义印章',
                 'ed_custom_stamp': '自定义印章文字', 'ed_link_title': '添加超链接区域', 'ed_note_title': '添加便利贴备注', 'ed_done': '完成',
                 'status_preparing': '处理准备中...', 'status_selected_files': '已选择 {n} 个文件', 'status_total_pages': '共 {n} 页', 'status_processing': '处理中...', 'status_done': '✓ 处理完成！',
-                'split_mode_label': '请选择分割方式：', 'split_range': '提取指定范围', 'split_from': '从', 'split_to': '到', 'split_all': '分割每一页', 'split_all_desc': '将每一页独立为单独的 PDF 并打包为 ZIP。',
-                'merge_list_label': '待合并文件列表：', 'rotate_label': '选择旋转角度 (应用至全文件)：', 'rot_90_cw': '顺时针 90 度', 'rot_180': '旋转 180 度', 'rot_90_ccw': '逆时针 90 度',
+                'split_select_all': '全选', 'split_clear_all': '取消全选', 'split_invert': '反选', 'split_odd': '单数页', 'split_even': '双数页',
+                'split_input_label': '输入或点选需要版面（支持页码与范围）：', 'split_input_placeholder': '例如：1-3, 5, 8-10',
+                'split_output_label': '导出方式：', 'split_out_single': '提取为单一 PDF 文件', 'split_out_zip': '每页独立为单独 PDF (ZIP)',
+                'split_hint': '💡 点击下方页面卡片即可勾选/取消（按住 Shift 点击可连续选取），或直接将新 PDF 拖入下方区域。',
+                'merge_list_label': '待合并文件列表：', 'merge_mode_file': '按文件排位', 'merge_mode_page': '逐页自由排位', 'merge_reverse': '反转顺序', 'merge_add_more': '添加更多 PDF', 'merge_drag_hint': '💡 拖动卡片或点击左右箭头即可自由调整合并顺序（支持直接将新 PDF 拖入下方区域）。',
+                'rotate_label': '选择旋转角度 (应用至全文件)：', 'rot_90_cw': '顺时针 90 度', 'rot_180': '旋转 180 度', 'rot_90_ccw': '逆时针 90 度',
                 'del_label': '输入要删除的页码：', 'del_placeholder': '例如: 1, 3, 5-7', 'del_desc': '支持单一页码与范围（如：2-5），以逗号分隔。',
                 'pdf2jpg_label': '转换设置：', 'pdf2jpg_desc': '将把 PDF 的每一页渲染为高质量 JPG 图片并打包成 ZIP 文件下载。',
                 'compress_label': '选择压缩模式：', 'img2pdf_label': '已选图片：', 'btn_process': '开始处理',
-                'footer_1_1': '✓ 文件无需上传', 'footer_1_2': '100% 浏览器本地处理', 'footer_2_1': '✓ 免费，无需注册', 'footer_2_2': '没有水印', 'footer_3_1': '✓ 页数不限', 'footer_3_2': '性能取决于设备配置',
-                'err_need_2_files': '合并请至少选择 2 个 PDF 文件！', 'err_invalid_pdf': '请选择有效的 PDF 文件！', 'err_encrypted': '此文件已被加密！本工具无法处理加密文件。', 'err_read_fail': '无法读取文件！文件格式不支持或已损坏。', 'err_invalid_range': '无效的页码范围 (1 至 {n})', 'err_invalid_page_num': '请输入有效的页码', 'err_process_fail': '处理失败，请确认设置或文件格式。'
+                'footer_1_1': '✓ 本机用/ 内联用', 'footer_1_2': '100% 浏览器本地处理', 'footer_2_1': '✓ 免费，无需注册', 'footer_2_2': '没有水印', 'footer_3_1': '✓ 页数不限', 'footer_3_2': '性能取决于设备配置',
+                'err_need_2_files': '合并请至少保留 2 个 PDF 文件或 2 个页面！', 'err_no_split_pages': '请至少选择或输入 1 个需要分割的版面！', 'err_invalid_pdf': '请选择有效的 PDF 文件！', 'err_encrypted': '此文件已被加密！本工具无法处理加密文件。', 'err_read_fail': '无法读取文件！文件格式不支持或已损坏。', 'err_invalid_range': '无效的页码范围 (1 至 {n})', 'err_invalid_page_num': '请输入有效的页码', 'err_process_fail': '处理失败，请确认设置或文件格式。'
             },
             'en': {
                 'nav_all_tools': 'All Tools', 'cat_edit_pdf': 'Edit PDF', 'cat_from_pdf': 'Convert from PDF', 'cat_to_pdf': 'Convert to PDF',
                 'tool_editor': 'Edit PDF', 'tool_sign': 'Sign PDF', 'tool_rotate': 'Rotate PDF', 'tool_merge': 'Merge PDF', 'tool_split': 'Split PDF',
-                'tool_crop': 'Crop PDF', 'tool_watermark': 'Add Watermark', 'tool_addimg': 'Add Image to PDF', 'tool_compressimg': 'Compress Image',
+                'tool_watermark': 'Add Watermark', 'tool_addimg': 'Add Image to PDF', 'tool_compressimg': 'Compress Image',
                 'tool_compress': 'Compress PDF', 'tool_delete': 'Delete Pages',
                 'tool_pdf2jpg': 'PDF to JPG', 'tool_pdf2png': 'PDF to PNG',
                 'tool_jpg2pdf': 'JPG to PDF', 'tool_png2pdf': 'PNG to PDF',
-                'badge_private': 'Private', 'badge_no_upload': 'Free to use, files are not uploaded',
+                'badge_private': 'Private', 'badge_no_upload': 'Local / Intranet Use',
                 'drop_single': 'Drop file here', 'drop_multi': 'Drop multiple files here',
                 'btn_select_pdf': 'Select PDF File', 'btn_select_pdfs': 'Select Multiple PDFs', 'btn_select_imgs': 'Select Image Files',
                 'ed_create_blank': 'Create Blank PDF', 'ed_download': 'Download PDF', 'ed_add_page': 'Add Page', 'ed_blank_page': 'Blank Page', 'ed_from_file': 'From File',
@@ -913,13 +961,17 @@
                 'ed_clear': 'Clear', 'ed_cancel': 'Cancel', 'ed_insert': 'Insert', 'ed_stamp_title': 'Choose or Custom Stamp',
                 'ed_custom_stamp': 'Custom stamp text', 'ed_link_title': 'Add Hyperlink Area', 'ed_note_title': 'Add Sticky Note', 'ed_done': 'Done',
                 'status_preparing': 'Preparing...', 'status_selected_files': '{n} files selected', 'status_total_pages': '{n} pages in total', 'status_processing': 'Processing...', 'status_done': '✓ Complete!',
-                'split_mode_label': 'Select split method:', 'split_range': 'Extract specific range', 'split_from': 'From', 'split_to': 'To', 'split_all': 'Split every page', 'split_all_desc': 'Extract every page as a single PDF and pack into a ZIP.',
-                'merge_list_label': 'Files to merge:', 'rotate_label': 'Select rotation angle (applies to whole doc):', 'rot_90_cw': 'Clockwise 90°', 'rot_180': 'Rotate 180°', 'rot_90_ccw': 'Counter-clockwise 90°',
+                'split_select_all': 'Select All', 'split_clear_all': 'Clear', 'split_invert': 'Invert', 'split_odd': 'Odd Pages', 'split_even': 'Even Pages',
+                'split_input_label': 'Enter or click pages to extract (ranges supported):', 'split_input_placeholder': 'e.g., 1-3, 5, 8-10',
+                'split_output_label': 'Export format:', 'split_out_single': 'Extract into single PDF', 'split_out_zip': 'Separate PDF per page (ZIP)',
+                'split_hint': '💡 Click page cards below to select/deselect (Shift+Click for range), or drop more PDFs below.',
+                'merge_list_label': 'Files to merge:', 'merge_mode_file': 'File Order', 'merge_mode_page': 'Page-by-Page Order', 'merge_reverse': 'Reverse', 'merge_add_more': 'Add More PDFs', 'merge_drag_hint': '💡 Drag cards or use arrows to arrange merge order (you can also drop new PDFs below).',
+                'rotate_label': 'Select rotation angle (applies to whole doc):', 'rot_90_cw': 'Clockwise 90°', 'rot_180': 'Rotate 180°', 'rot_90_ccw': 'Counter-clockwise 90°',
                 'del_label': 'Enter page numbers to delete:', 'del_placeholder': 'e.g., 1, 3, 5-7', 'del_desc': 'Supports single pages and ranges (e.g., 2-5), separated by commas.',
                 'pdf2jpg_label': 'Conversion settings:', 'pdf2jpg_desc': 'Renders every PDF page as a high-quality JPG image and packs them into a ZIP file.',
                 'compress_label': 'Select compression mode:', 'img2pdf_label': 'Selected images:', 'btn_process': 'Start Processing',
-                'footer_1_1': '✓ No File Uploads', 'footer_1_2': '100% local browser processing', 'footer_2_1': '✓ Free, No Registration', 'footer_2_2': 'No watermarks added', 'footer_3_1': '✓ Unlimited Pages', 'footer_3_2': 'Performance depends on device',
-                'err_need_2_files': 'Please select at least 2 PDF files to merge!', 'err_invalid_pdf': 'Please select a valid PDF file!', 'err_encrypted': 'This file is encrypted! This tool cannot process encrypted files.', 'err_read_fail': 'Unable to read file! Unsupported format or corrupted.', 'err_invalid_range': 'Invalid page range (1 to {n})', 'err_invalid_page_num': 'Please enter valid page numbers', 'err_process_fail': 'Processing failed, please check your settings or file format.'
+                'footer_1_1': '✓ Local / Intranet Use', 'footer_1_2': '100% local browser processing', 'footer_2_1': '✓ Free, No Registration', 'footer_2_2': 'No watermarks added', 'footer_3_1': '✓ Unlimited Pages', 'footer_3_2': 'Performance depends on device',
+                'err_need_2_files': 'Please keep at least 2 PDF files or 2 pages to merge!', 'err_no_split_pages': 'Please select or enter at least 1 page to split!', 'err_invalid_pdf': 'Please select a valid PDF file!', 'err_encrypted': 'This file is encrypted! This tool cannot process encrypted files.', 'err_read_fail': 'Unable to read file! Unsupported format or corrupted.', 'err_invalid_range': 'Invalid page range (1 to {n})', 'err_invalid_page_num': 'Please enter valid page numbers', 'err_process_fail': 'Processing failed, please check your settings or file format.'
             }
         };
 
@@ -944,10 +996,18 @@
                 document.getElementById('upload-btn-text').textContent = t(toolsConfig[currentTool].btnTextKey);
                 document.getElementById('drop-text').textContent = t(toolsConfig[currentTool].dropKey);
             }
+            if (currentTool === 'merge' && mergeFileItems.length > 0) {
+                updateMergeHeaderSummary();
+                renderMergeGrid();
+            }
+            if (currentTool === 'split' && splitPageItems.length > 0) {
+                updateSplitHeaderSummary();
+                renderSplitGrid();
+            }
         }
 
         // =========================================================================
-        // 2. 全域變數與全部 22 項工具設定
+        // 2. 全域變數與工具設定
         // =========================================================================
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         const { PDFDocument } = PDFLib;
@@ -958,19 +1018,28 @@
         let currentFileBytes = null;
         let totalPagesCount = 0;
 
+        // 合併排位專用狀態
+        let mergeOrderMode = 'file'; // 'file' | 'page'
+        let mergeFileItems = [];     // [{ id, name, size, bytes, pageCount, firstPageThumb, rotation, pageThumbs: [] }]
+        let mergePageItems = [];     // [{ id, fileId, fileName, pageIndex, thumbUrl, rotation }]
+        let draggedMergeIndex = null;
+
+        // 分割版面選擇專用狀態
+        let splitFileItems = [];     // [{ id, name, size, bytes, pageCount }]
+        let splitPageItems = [];     // [{ id, fileId, fileName, filePageIndex, thumbUrl, selected, rotation }]
+        let lastSplitClickedIndex = null;
+
         const toolsConfig = {
             'editor':      { titleKey: 'tool_editor',      btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false, isEditor: true },
             'sign':        { titleKey: 'tool_sign',        btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false, isEditor: true, autoAction: 'sign' },
             'addimg':      { titleKey: 'tool_addimg',      btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false, isEditor: true, autoAction: 'image' },
             'rotate':      { titleKey: 'tool_rotate',      btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false },
             'merge':       { titleKey: 'tool_merge',       btnTextKey: 'btn_select_pdfs',  dropKey: 'drop_multi',  accept: 'application/pdf', multiple: true },
-            'split':       { titleKey: 'tool_split',       btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false },
-            'crop':        { titleKey: 'tool_crop',        btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false },
+            'split':       { titleKey: 'tool_split',       btnTextKey: 'btn_select_pdfs',  dropKey: 'drop_multi',  accept: 'application/pdf', multiple: true },
             'watermark':   { titleKey: 'tool_watermark',   btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false },
             'compressimg': { titleKey: 'tool_compressimg', btnTextKey: 'btn_select_imgs',  dropKey: 'drop_multi',  accept: 'image/jpeg, image/png, image/webp', multiple: true },
             'compress':    { titleKey: 'tool_compress',    btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false },
             'delete':      { titleKey: 'tool_delete',      btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false },
-            'ocr':         { titleKey: 'OCR PDF',          btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false },
             'pdf2jpg':     { titleKey: 'tool_pdf2jpg',     btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false },
             'pdf2png':     { titleKey: 'tool_pdf2png',     btnTextKey: 'btn_select_pdf',   dropKey: 'drop_single', accept: 'application/pdf', multiple: false },
             'jpg2pdf':     { titleKey: 'tool_jpg2pdf',     btnTextKey: 'btn_select_imgs',  dropKey: 'drop_multi',  accept: 'image/jpeg,image/jpg', multiple: true },
@@ -988,6 +1057,44 @@
             e.preventDefault();
             dropZone.classList.remove('bg-blue-50/60', 'border-blue-400');
             if (e.dataTransfer.files.length > 0) handleFileSelect({ target: { files: e.dataTransfer.files } });
+        });
+
+        // 支援直接把新 PDF 拖入合併工作區卡片框
+        const mergeDropArea = document.getElementById('merge-drop-area');
+        mergeDropArea.addEventListener('dragover', (e) => {
+            if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+                e.preventDefault();
+                mergeDropArea.classList.add('border-emerald-500', 'bg-emerald-50/40');
+            }
+        });
+        mergeDropArea.addEventListener('dragleave', () => {
+            mergeDropArea.classList.remove('border-emerald-500', 'bg-emerald-50/40');
+        });
+        mergeDropArea.addEventListener('drop', (e) => {
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                e.preventDefault();
+                mergeDropArea.classList.remove('border-emerald-500', 'bg-emerald-50/40');
+                appendFilesToMerge(Array.from(e.dataTransfer.files));
+            }
+        });
+
+        // 支援直接把新 PDF 拖入分割工作區縮圖網格
+        const splitDropArea = document.getElementById('split-drop-area');
+        splitDropArea.addEventListener('dragover', (e) => {
+            if (e.dataTransfer.types && Array.from(e.dataTransfer.types).includes('Files')) {
+                e.preventDefault();
+                splitDropArea.classList.add('border-emerald-500', 'bg-emerald-50/40');
+            }
+        });
+        splitDropArea.addEventListener('dragleave', () => {
+            splitDropArea.classList.remove('border-emerald-500', 'bg-emerald-50/40');
+        });
+        splitDropArea.addEventListener('drop', (e) => {
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                e.preventDefault();
+                splitDropArea.classList.remove('border-emerald-500', 'bg-emerald-50/40');
+                appendFilesToSplit(Array.from(e.dataTransfer.files));
+            }
         });
 
         function toggleAllToolsDrawer() {
@@ -1033,7 +1140,7 @@
             const activeNav = document.querySelector(`.nav-item[data-target="${tool}"]`);
             if (activeNav) activeNav.classList.add('active');
 
-            document.getElementById('page-title').textContent = tool === 'ocr' ? 'OCR PDF' : t(cfg.titleKey);
+            document.getElementById('page-title').textContent = t(cfg.titleKey);
             document.getElementById('upload-btn-text').textContent = t(cfg.btnTextKey);
             document.getElementById('drop-text').textContent = t(cfg.dropKey);
 
@@ -1067,16 +1174,54 @@
                     return;
                 }
 
+                // 合併 PDF 專屬初始化流程
+                if (currentTool === 'merge') {
+                    mergeFileItems = [];
+                    mergePageItems = [];
+                    mergeOrderMode = 'file';
+                    updateMergeModeButtons();
+
+                    document.getElementById('drop-zone-container').classList.add('hidden');
+                    const procZone = document.getElementById('processing-zone');
+                    procZone.classList.remove('hidden', 'max-w-2xl');
+                    procZone.classList.add('max-w-4xl');
+
+                    document.querySelectorAll('.tool-config').forEach(el => el.classList.add('hidden'));
+                    document.getElementById('config-merge').classList.remove('hidden');
+
+                    await appendFilesToMerge(files);
+                    return;
+                }
+
+                // 分割 PDF 專屬視覺縮圖與多檔初始化流程
+                if (currentTool === 'split') {
+                    splitFileItems = [];
+                    splitPageItems = [];
+                    lastSplitClickedIndex = null;
+
+                    document.getElementById('drop-zone-container').classList.add('hidden');
+                    const procZone = document.getElementById('processing-zone');
+                    procZone.classList.remove('hidden', 'max-w-2xl');
+                    procZone.classList.add('max-w-4xl');
+
+                    document.querySelectorAll('.tool-config').forEach(el => el.classList.add('hidden'));
+                    document.getElementById('config-split').classList.remove('hidden');
+
+                    await appendFilesToSplit(files);
+                    return;
+                }
+
+                // 恢復標準工作區寬度
+                const procZone = document.getElementById('processing-zone');
+                procZone.classList.remove('max-w-4xl');
+                procZone.classList.add('max-w-2xl');
+
                 if (cfg.multiple) {
                     multiFiles = files;
-                    if (currentTool === 'merge' && files.length < 2) {
-                        showError(t('err_need_2_files'));
-                        return resetApp(false);
-                    }
                     document.getElementById('file-name').textContent = t('status_selected_files').replace('{n}', files.length);
                     document.getElementById('file-meta').textContent = `${(files.reduce((s, f) => s + f.size, 0) / 1024).toFixed(1)} KB`;
 
-                    const listId = currentTool === 'merge' ? 'merge-file-list' : (currentTool === 'compressimg' ? 'compressimg-list' : 'img2pdf-list');
+                    const listId = currentTool === 'compressimg' ? 'compressimg-list' : 'img2pdf-list';
                     const listEl = document.getElementById(listId);
                     listEl.innerHTML = '';
                     files.forEach((f, idx) => {
@@ -1097,15 +1242,6 @@
                             const pdfDoc = await PDFDocument.load(currentFileBytes);
                             totalPagesCount = pdfDoc.getPageCount();
                             document.getElementById('file-meta').textContent = t('status_total_pages').replace('{n}', totalPagesCount);
-
-                            if (currentTool === 'split') {
-                                document.getElementById('start-page').value = 1;
-                                document.getElementById('start-page').max = totalPagesCount;
-                                document.getElementById('end-page').value = totalPagesCount;
-                                document.getElementById('end-page').max = totalPagesCount;
-                            } else if (currentTool === 'crop') {
-                                setTimeout(updateCropPreview, 60);
-                            }
                         } catch (err) {
                             if (err.message && err.message.toLowerCase().includes('encrypted')) {
                                 showError(t('err_encrypted'));
@@ -1119,7 +1255,7 @@
                 }
 
                 document.getElementById('drop-zone-container').classList.add('hidden');
-                document.getElementById('processing-zone').classList.remove('hidden');
+                procZone.classList.remove('hidden');
 
                 document.querySelectorAll('.tool-config').forEach(el => el.classList.add('hidden'));
                 const panelKey = (currentTool === 'jpg2pdf' || currentTool === 'png2pdf') ? 'img2pdf' : currentTool;
@@ -1134,11 +1270,533 @@
         }
 
         // =========================================================================
-        // 3. 完整 PDF 編輯器核心邏輯 (新增/編輯文字、手繪、形狀、簽名、印章、連結、備註、管理頁面)
+        // 2.4 分割 PDF 視覺縮圖多選 & 範圍雙向同步引擎
+        // =========================================================================
+        async function handleAddMoreSplitFiles(e) {
+            const files = Array.from(e.target.files || []);
+            e.target.value = '';
+            if (files.length > 0) await appendFilesToSplit(files);
+        }
+
+        async function appendFilesToSplit(files) {
+            const badge = document.getElementById('split-loading-badge');
+            badge.classList.remove('hidden');
+            hideError();
+
+            for (const file of files) {
+                if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showError(t('err_invalid_pdf'));
+                    continue;
+                }
+                try {
+                    const bytes = await file.arrayBuffer();
+                    const checkDoc = await PDFDocument.load(bytes);
+                    const pageCount = checkDoc.getPageCount();
+                    const pdfJsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(bytes.slice(0)) }).promise;
+
+                    const fileId = 'sfile_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+                    splitFileItems.push({
+                        id: fileId,
+                        name: file.name,
+                        size: file.size,
+                        bytes,
+                        pageCount
+                    });
+
+                    for (let p = 1; p <= pageCount; p++) {
+                        const thumbUrl = await renderPdfPageThumb(pdfJsDoc, p, 0.42);
+                        splitPageItems.push({
+                            id: `spage_${fileId}_${p - 1}_${Math.random().toString(36).slice(2, 6)}`,
+                            fileId,
+                            fileName: file.name,
+                            filePageIndex: p - 1,
+                            thumbUrl,
+                            selected: true,
+                            rotation: 0
+                        });
+                    }
+                } catch (err) {
+                    console.error(err);
+                    if (err.message && err.message.toLowerCase().includes('encrypted')) {
+                        showError(`${file.name}: ${t('err_encrypted')}`);
+                    } else {
+                        showError(`${file.name}: ${t('err_read_fail')}`);
+                    }
+                }
+            }
+
+            badge.classList.add('hidden');
+
+            if (splitFileItems.length === 0) {
+                resetApp(false);
+                return;
+            }
+
+            updateSplitHeaderSummary();
+            syncSplitInputFromSelection();
+            renderSplitGrid();
+        }
+
+        function removeSplitFile(fileId) {
+            splitFileItems = splitFileItems.filter(f => f.id !== fileId);
+            splitPageItems = splitPageItems.filter(p => p.fileId !== fileId);
+            if (splitFileItems.length === 0) return resetApp();
+            lastSplitClickedIndex = null;
+            updateSplitHeaderSummary();
+            syncSplitInputFromSelection();
+            renderSplitGrid();
+        }
+
+        function updateSplitHeaderSummary() {
+            const totalFiles = splitFileItems.length;
+            const totalPages = splitPageItems.length;
+            const selectedCount = splitPageItems.filter(p => p.selected).length;
+            const totalSizeKB = (splitFileItems.reduce((sum, f) => sum + f.size, 0) / 1024).toFixed(1);
+
+            document.getElementById('file-name').textContent = totalFiles === 1
+                ? splitFileItems[0].name
+                : t('status_selected_files').replace('{n}', totalFiles);
+            document.getElementById('file-meta').textContent = `${t('status_total_pages').replace('{n}', totalPages)} · ${totalSizeKB} KB`;
+            document.getElementById('split-selected-badge').textContent = `已選 ${selectedCount} / ${totalPages} 頁`;
+
+            // 渲染已載入檔案標籤列
+            const filesBar = document.getElementById('split-files-bar');
+            filesBar.innerHTML = '';
+            splitFileItems.forEach((f, idx) => {
+                const chip = document.createElement('div');
+                chip.className = 'inline-flex items-center gap-2 bg-gray-100 border border-gray-200 text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full max-w-full';
+                chip.innerHTML = `
+                    <span class="font-bold text-gray-500">${idx + 1}.</span>
+                    <span class="truncate max-w-[180px] sm:max-w-[260px]" title="${f.name}">${f.name}</span>
+                    <span class="text-gray-400">(${f.pageCount}頁)</span>
+                    <button type="button" onclick="removeSplitFile('${f.id}')" class="text-gray-400 hover:text-red-600 font-bold ml-0.5 transition" title="移除此 PDF">✕</button>
+                `;
+                filesBar.appendChild(chip);
+            });
+        }
+
+        function toggleSplitPageSelection(idx, shiftKey = false) {
+            if (!splitPageItems[idx]) return;
+            if (shiftKey && lastSplitClickedIndex !== null && lastSplitClickedIndex !== idx) {
+                const start = Math.min(lastSplitClickedIndex, idx);
+                const end = Math.max(lastSplitClickedIndex, idx);
+                const targetState = !splitPageItems[idx].selected;
+                for (let i = start; i <= end; i++) {
+                    splitPageItems[i].selected = targetState;
+                }
+            } else {
+                splitPageItems[idx].selected = !splitPageItems[idx].selected;
+            }
+            lastSplitClickedIndex = idx;
+            updateSplitHeaderSummary();
+            syncSplitInputFromSelection();
+            renderSplitGrid();
+        }
+
+        function applySplitQuickSelect(mode) {
+            splitPageItems.forEach((item, idx) => {
+                const pageNum = idx + 1;
+                if (mode === 'all') item.selected = true;
+                else if (mode === 'none') item.selected = false;
+                else if (mode === 'invert') item.selected = !item.selected;
+                else if (mode === 'odd') item.selected = (pageNum % 2 === 1);
+                else if (mode === 'even') item.selected = (pageNum % 2 === 0);
+            });
+            updateSplitHeaderSummary();
+            syncSplitInputFromSelection();
+            renderSplitGrid();
+        }
+
+        function rotateSplitPage(idx) {
+            if (!splitPageItems[idx]) return;
+            splitPageItems[idx].rotation = ((splitPageItems[idx].rotation || 0) + 90) % 360;
+            renderSplitGrid();
+        }
+
+        function syncSplitInputFromSelection() {
+            const inputEl = document.getElementById('split-pages-input');
+            if (!inputEl) return;
+            const selectedNums = [];
+            splitPageItems.forEach((item, idx) => {
+                if (item.selected) selectedNums.push(idx + 1);
+            });
+            if (!selectedNums.length) {
+                inputEl.value = '';
+                return;
+            }
+            const ranges = [];
+            let start = selectedNums[0];
+            let prev = selectedNums[0];
+            for (let i = 1; i < selectedNums.length; i++) {
+                const cur = selectedNums[i];
+                if (cur === prev + 1) {
+                    prev = cur;
+                } else {
+                    ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+                    start = cur;
+                    prev = cur;
+                }
+            }
+            ranges.push(start === prev ? `${start}` : `${start}-${prev}`);
+            inputEl.value = ranges.join(', ');
+        }
+
+        function handleSplitInputChange(rawVal) {
+            const total = splitPageItems.length;
+            const selectedSet = new Set();
+            const normalized = rawVal.replace(/[，、；;]/g, ',').replace(/[至~～—–]/g, '-');
+            normalized.split(',').forEach(token => {
+                const part = token.trim();
+                if (!part) return;
+                if (part.includes('-')) {
+                    const [sStr, eStr] = part.split('-');
+                    const s = parseInt(sStr, 10);
+                    const e = parseInt(eStr, 10);
+                    if (!isNaN(s) && !isNaN(e) && s >= 1 && e >= s) {
+                        for (let p = s; p <= Math.min(total, e); p++) selectedSet.add(p);
+                    }
+                } else {
+                    const n = parseInt(part, 10);
+                    if (!isNaN(n) && n >= 1 && n <= total) selectedSet.add(n);
+                }
+            });
+
+            splitPageItems.forEach((item, idx) => {
+                item.selected = selectedSet.has(idx + 1);
+            });
+            updateSplitHeaderSummary();
+            renderSplitGrid();
+        }
+
+        function renderSplitGrid() {
+            const grid = document.getElementById('split-visual-grid');
+            grid.innerHTML = '';
+
+            splitPageItems.forEach((item, idx) => {
+                const pageNum = idx + 1;
+                const isSel = item.selected;
+                const card = document.createElement('div');
+                card.className = `split-card rounded-2xl p-3 flex flex-col justify-between cursor-pointer relative select-none border-2 ${
+                    isSel
+                        ? 'bg-emerald-50/35 border-emerald-500 shadow-sm ring-2 ring-emerald-500/15'
+                        : 'bg-white border-gray-200 opacity-75 hover:opacity-100 hover:border-gray-300'
+                }`;
+
+                card.addEventListener('click', (e) => {
+                    toggleSplitPageSelection(idx, e.shiftKey);
+                });
+
+                card.innerHTML = `
+                    <!-- 頂部全域頁碼與選取狀態標記 -->
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="inline-flex items-center justify-center min-w-[28px] h-6 px-2 rounded-full text-xs font-bold shadow-2xs ${
+                            isSel ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'
+                        }">#${pageNum}</span>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="event.stopPropagation(); rotateSplitPage(${idx})" class="w-6 h-6 rounded-full bg-white/90 hover:bg-gray-200 border border-gray-200 text-gray-700 text-xs font-bold flex items-center justify-center transition" title="旋轉 90°">↻</button>
+                            <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition ${
+                                isSel ? 'bg-emerald-600 text-white shadow-2xs' : 'border-2 border-gray-300 bg-white text-transparent'
+                            }">✓</span>
+                        </div>
+                    </div>
+
+                    <!-- 頁面縮圖預覽 -->
+                    <div class="w-full h-36 bg-gray-100 rounded-xl border border-gray-200/80 overflow-hidden flex items-center justify-center p-1.5 mb-2.5">
+                        <img src="${item.thumbUrl}" draggable="false" class="max-h-full max-w-full object-contain shadow-xs transition-transform duration-200" style="transform: rotate(${item.rotation || 0}deg)">
+                    </div>
+
+                    <!-- 來源檔名與原頁碼 -->
+                    <div class="text-center">
+                        <p class="text-xs font-bold text-gray-800 truncate" title="${item.fileName}">${item.fileName}</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">原檔第 ${item.filePageIndex + 1} 頁</p>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // =========================================================================
+        // 2.5 合併 PDF 自由排位互動引擎 (檔案排位 & 逐頁自由排位)
+        // =========================================================================
+        async function handleAddMoreMergeFiles(e) {
+            const files = Array.from(e.target.files || []);
+            e.target.value = '';
+            if (files.length > 0) await appendFilesToMerge(files);
+        }
+
+        async function appendFilesToMerge(files) {
+            const badge = document.getElementById('merge-loading-badge');
+            badge.classList.remove('hidden');
+            hideError();
+
+            for (const file of files) {
+                if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                    showError(t('err_invalid_pdf'));
+                    continue;
+                }
+                try {
+                    const bytes = await file.arrayBuffer();
+                    // 驗證是否加密
+                    const checkDoc = await PDFDocument.load(bytes);
+                    const pageCount = checkDoc.getPageCount();
+
+                    // 使用 PDF.js 渲染第一頁縮圖
+                    const pdfJsDoc = await pdfjsLib.getDocument({ data: new Uint8Array(bytes.slice(0)) }).promise;
+                    const firstThumb = await renderPdfPageThumb(pdfJsDoc, 1, 0.45);
+
+                    const fileId = 'mfile_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+                    const newItem = {
+                        id: fileId,
+                        name: file.name,
+                        size: file.size,
+                        bytes,
+                        pageCount,
+                        firstPageThumb: firstThumb,
+                        rotation: 0,
+                        pageThumbs: [firstThumb] // 快取各頁縮圖
+                    };
+                    mergeFileItems.push(newItem);
+
+                    // 如果目前處於逐頁自由排位模式，同步渲染並加入該檔案所有頁面
+                    if (mergeOrderMode === 'page') {
+                        await ensureAllPageThumbsForFile(newItem, pdfJsDoc);
+                        for (let p = 0; p < newItem.pageCount; p++) {
+                            mergePageItems.push({
+                                id: `mpage_${fileId}_${p}_${Math.random().toString(36).slice(2, 6)}`,
+                                fileId: newItem.id,
+                                fileName: newItem.name,
+                                pageIndex: p,
+                                thumbUrl: newItem.pageThumbs[p],
+                                rotation: 0
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error(err);
+                    if (err.message && err.message.toLowerCase().includes('encrypted')) {
+                        showError(`${file.name}: ${t('err_encrypted')}`);
+                    } else {
+                        showError(`${file.name}: ${t('err_read_fail')}`);
+                    }
+                }
+            }
+
+            badge.classList.add('hidden');
+
+            if (mergeFileItems.length === 0) {
+                resetApp(false);
+                return;
+            }
+
+            updateMergeHeaderSummary();
+            renderMergeGrid();
+        }
+
+        async function renderPdfPageThumb(pdfJsDoc, pageNum, scale = 0.45) {
+            const page = await pdfJsDoc.getPage(pageNum);
+            const vp = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            canvas.width = vp.width;
+            canvas.height = vp.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        async function ensureAllPageThumbsForFile(fileItem, existingPdfJsDoc = null) {
+            if (fileItem.pageThumbs.length === fileItem.pageCount) return;
+            const pdfJsDoc = existingPdfJsDoc || await pdfjsLib.getDocument({ data: new Uint8Array(fileItem.bytes.slice(0)) }).promise;
+            for (let p = fileItem.pageThumbs.length + 1; p <= fileItem.pageCount; p++) {
+                const thumb = await renderPdfPageThumb(pdfJsDoc, p, 0.42);
+                fileItem.pageThumbs.push(thumb);
+            }
+        }
+
+        async function switchMergeOrderMode(mode) {
+            if (mergeOrderMode === mode) return;
+            mergeOrderMode = mode;
+            updateMergeModeButtons();
+
+            if (mode === 'page') {
+                const badge = document.getElementById('merge-loading-badge');
+                badge.classList.remove('hidden');
+                mergePageItems = [];
+                for (const fItem of mergeFileItems) {
+                    await ensureAllPageThumbsForFile(fItem);
+                    for (let p = 0; p < fItem.pageCount; p++) {
+                        mergePageItems.push({
+                            id: `mpage_${fItem.id}_${p}_${Math.random().toString(36).slice(2, 6)}`,
+                            fileId: fItem.id,
+                            fileName: fItem.name,
+                            pageIndex: p,
+                            thumbUrl: fItem.pageThumbs[p],
+                            rotation: fItem.rotation || 0
+                        });
+                    }
+                }
+                badge.classList.add('hidden');
+            }
+
+            updateMergeHeaderSummary();
+            renderMergeGrid();
+        }
+
+        function updateMergeModeButtons() {
+            const fileBtn = document.getElementById('merge-mode-file-btn');
+            const pageBtn = document.getElementById('merge-mode-page-btn');
+            if (mergeOrderMode === 'file') {
+                fileBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-white text-gray-900 shadow-xs transition';
+                pageBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 transition';
+            } else {
+                pageBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold bg-white text-gray-900 shadow-xs transition';
+                fileBtn.className = 'px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-900 transition';
+            }
+        }
+
+        function updateMergeHeaderSummary() {
+            const totalFiles = mergeFileItems.length;
+            const totalPages = mergeOrderMode === 'page'
+                ? mergePageItems.length
+                : mergeFileItems.reduce((sum, f) => sum + f.pageCount, 0);
+            const totalSizeKB = (mergeFileItems.reduce((sum, f) => sum + f.size, 0) / 1024).toFixed(1);
+
+            document.getElementById('file-name').textContent = t('status_selected_files').replace('{n}', totalFiles);
+            document.getElementById('file-meta').textContent = `${t('status_total_pages').replace('{n}', totalPages)} · ${totalSizeKB} KB`;
+        }
+
+        function moveMergeItem(idx, delta) {
+            const list = mergeOrderMode === 'file' ? mergeFileItems : mergePageItems;
+            const target = idx + delta;
+            if (target < 0 || target >= list.length) return;
+            const temp = list[idx];
+            list[idx] = list[target];
+            list[target] = temp;
+            renderMergeGrid();
+        }
+
+        function rotateMergeItem(idx) {
+            const list = mergeOrderMode === 'file' ? mergeFileItems : mergePageItems;
+            if (!list[idx]) return;
+            list[idx].rotation = ((list[idx].rotation || 0) + 90) % 360;
+            renderMergeGrid();
+        }
+
+        function removeMergeItem(idx) {
+            if (mergeOrderMode === 'file') {
+                mergeFileItems.splice(idx, 1);
+                if (mergeFileItems.length === 0) return resetApp();
+            } else {
+                mergePageItems.splice(idx, 1);
+                if (mergePageItems.length === 0) return resetApp();
+            }
+            updateMergeHeaderSummary();
+            renderMergeGrid();
+        }
+
+        function reverseMergeItems() {
+            if (mergeOrderMode === 'file') mergeFileItems.reverse();
+            else mergePageItems.reverse();
+            renderMergeGrid();
+        }
+
+        function sortMergeItemsByName() {
+            if (mergeOrderMode === 'file') {
+                mergeFileItems.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+            } else {
+                mergePageItems.sort((a, b) => {
+                    const cmp = a.fileName.localeCompare(b.fileName, undefined, { numeric: true });
+                    return cmp !== 0 ? cmp : a.pageIndex - b.pageIndex;
+                });
+            }
+            renderMergeGrid();
+        }
+
+        function renderMergeGrid() {
+            const grid = document.getElementById('merge-visual-grid');
+            grid.innerHTML = '';
+            const items = mergeOrderMode === 'file' ? mergeFileItems : mergePageItems;
+
+            items.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.className = 'merge-card bg-white border-2 border-gray-200 rounded-2xl p-3 flex flex-col justify-between shadow-2xs hover:shadow-md cursor-grab active:cursor-grabbing relative select-none';
+                card.draggable = true;
+                card.dataset.index = idx;
+
+                // 拖曳事件
+                card.addEventListener('dragstart', (e) => {
+                    draggedMergeIndex = idx;
+                    card.classList.add('dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', String(idx));
+                });
+                card.addEventListener('dragend', () => {
+                    draggedMergeIndex = null;
+                    document.querySelectorAll('.merge-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
+                });
+                card.addEventListener('dragover', (e) => {
+                    if (draggedMergeIndex === null || draggedMergeIndex === idx) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    card.classList.add('drag-over');
+                });
+                card.addEventListener('dragleave', () => {
+                    card.classList.remove('drag-over');
+                });
+                card.addEventListener('drop', (e) => {
+                    if (draggedMergeIndex === null || draggedMergeIndex === idx) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const list = mergeOrderMode === 'file' ? mergeFileItems : mergePageItems;
+                    const [moved] = list.splice(draggedMergeIndex, 1);
+                    list.splice(idx, 0, moved);
+                    draggedMergeIndex = null;
+                    renderMergeGrid();
+                });
+
+                const thumbSrc = mergeOrderMode === 'file' ? item.firstPageThumb : item.thumbUrl;
+                const titleText = mergeOrderMode === 'file' ? item.name : item.fileName;
+                const subText = mergeOrderMode === 'file'
+                    ? `${item.pageCount} 頁 · ${(item.size / 1024).toFixed(0)} KB`
+                    : `第 ${item.pageIndex + 1} 頁`;
+
+                card.innerHTML = `
+                    <!-- 頂部序號與刪除鈕 -->
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="inline-flex items-center justify-center min-w-[26px] h-6 px-2 rounded-full bg-black text-white text-xs font-bold shadow-2xs">#${idx + 1}</span>
+                        <button type="button" onclick="event.stopPropagation(); removeMergeItem(${idx})" class="w-6 h-6 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center transition" title="移除">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <!-- 縮圖預覽區 -->
+                    <div class="w-full h-36 bg-gray-100 rounded-xl border border-gray-200/80 overflow-hidden flex items-center justify-center p-1.5 mb-2.5">
+                        <img src="${thumbSrc}" draggable="false" class="max-h-full max-w-full object-contain shadow-xs transition-transform duration-200" style="transform: rotate(${item.rotation || 0}deg)">
+                    </div>
+
+                    <!-- 檔名與頁數資訊 -->
+                    <div class="mb-2.5 text-center">
+                        <p class="text-xs font-bold text-gray-800 truncate" title="${titleText}">${titleText}</p>
+                        <p class="text-[11px] text-gray-500 mt-0.5">${subText}</p>
+                    </div>
+
+                    <!-- 排位微調與旋轉控制列 -->
+                    <div class="flex items-center justify-between gap-1 pt-2 border-t border-gray-100">
+                        <button type="button" onclick="event.stopPropagation(); moveMergeItem(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="flex-1 py-1 bg-gray-50 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-gray-50 rounded-lg text-xs font-bold text-gray-700 transition" title="往前移一位">←</button>
+                        <button type="button" onclick="event.stopPropagation(); rotateMergeItem(${idx})" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-200 rounded-lg text-xs font-bold text-gray-700 transition" title="旋轉 90°">↻</button>
+                        <button type="button" onclick="event.stopPropagation(); moveMergeItem(${idx}, 1)" ${idx === items.length - 1 ? 'disabled' : ''} class="flex-1 py-1 bg-gray-50 hover:bg-gray-200 disabled:opacity-30 disabled:hover:bg-gray-50 rounded-lg text-xs font-bold text-gray-700 transition" title="往後移一位">→</button>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // =========================================================================
+        // 3. 完整 PDF 編輯器核心邏輯
         // =========================================================================
         let editorState = {
             filename: 'document.pdf',
-            pages: [], // { id, width, height, rotation, bgDataUrl, originalPdfBytes, originalPageIndex, textItems, elements }
+            pages: [],
             activePageIndex: 0,
             selectedElementId: null,
             activeTool: 'editText',
@@ -1165,7 +1823,9 @@
                 width: p.width,
                 height: p.height,
                 rotation: p.rotation,
-                bgDataUrl: p.bgDataUrl,
+                origPdfRotation: p.origPdfRotation || 0,
+                textItems: (p.textItems || []).map(ti => ({ ...ti })),
+                erasedRegions: (p.erasedRegions || []).map(er => ({ ...er })),
                 elements: p.elements
             })));
             editorState.undoStack.push(snap);
@@ -1182,7 +1842,14 @@
         function editorUndo() {
             if (!editorState.undoStack.length) return;
             const currentSnap = JSON.stringify(editorState.pages.map(p => ({
-                id: p.id, width: p.width, height: p.height, rotation: p.rotation, bgDataUrl: p.bgDataUrl, elements: p.elements
+                id: p.id,
+                width: p.width,
+                height: p.height,
+                rotation: p.rotation,
+                origPdfRotation: p.origPdfRotation || 0,
+                textItems: (p.textItems || []).map(ti => ({ ...ti })),
+                erasedRegions: (p.erasedRegions || []).map(er => ({ ...er })),
+                elements: p.elements
             })));
             editorState.redoStack.push(currentSnap);
             const prev = JSON.parse(editorState.undoStack.pop());
@@ -1193,7 +1860,14 @@
         function editorRedo() {
             if (!editorState.redoStack.length) return;
             const currentSnap = JSON.stringify(editorState.pages.map(p => ({
-                id: p.id, width: p.width, height: p.height, rotation: p.rotation, bgDataUrl: p.bgDataUrl, elements: p.elements
+                id: p.id,
+                width: p.width,
+                height: p.height,
+                rotation: p.rotation,
+                origPdfRotation: p.origPdfRotation || 0,
+                textItems: (p.textItems || []).map(ti => ({ ...ti })),
+                erasedRegions: (p.erasedRegions || []).map(er => ({ ...er })),
+                elements: p.elements
             })));
             editorState.undoStack.push(currentSnap);
             const next = JSON.parse(editorState.redoStack.pop());
@@ -1204,10 +1878,9 @@
         function restorePagesFromSnapshot(snapPages) {
             editorState.pages = snapPages.map((sp, idx) => {
                 const existing = editorState.pages[idx] || {};
-                return {
-                    ...existing,
-                    ...sp
-                };
+                const restored = { ...existing, ...sp };
+                rebuildPageCanvasFromErasedRegions(restored);
+                return restored;
             });
             editorState.selectedElementId = null;
             updateDeleteObjButton();
@@ -1221,6 +1894,7 @@
             const ctx = blankCanvas.getContext('2d');
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, blankCanvas.width, blankCanvas.height);
+            const blankUrl = blankCanvas.toDataURL('image/png');
 
             editorState = {
                 filename: 'new_document.pdf',
@@ -1229,8 +1903,15 @@
                     width: 595,
                     height: 842,
                     rotation: 0,
-                    bgDataUrl: blankCanvas.toDataURL('image/png'),
+                    origPdfRotation: 0,
+                    origBgDataUrl: blankUrl,
+                    origBgCanvas: blankCanvas,
+                    bgDataUrl: blankUrl,
+                    bgCanvas: blankCanvas,
+                    sourcePdfBytes: null,
+                    sourcePageIndex: -1,
                     textItems: [],
+                    erasedRegions: [],
                     elements: []
                 }],
                 activePageIndex: 0,
@@ -1246,7 +1927,125 @@
             setEditorTool('addText');
         }
 
+        // 解析 PDF 頁面文字，保持字詞粒度以便直接點選修改個別文字而不框住整行
+        async function extractPageTextItems(page, baseViewport, pageNum) {
+            const textContent = await page.getTextContent();
+            const styles = textContent.styles || {};
+            const vpScaleX = Math.hypot(baseViewport.transform[0], baseViewport.transform[1]) || 1;
+            const rawItems = [];
+
+            textContent.items.forEach((item, idx) => {
+                if (!item.str || !item.str.trim()) return;
+                const tx = pdfjsLib.Util.transform(baseViewport.transform, item.transform);
+                const fontHeight = Math.hypot(tx[2], tx[3]) || ((item.height || 0) * vpScaleX) || 12;
+                const rawW = (item.width || 0) * vpScaleX;
+                const totalW = Math.max(6, rawW || (item.str.length * fontHeight * 0.55));
+                const topY = tx[5] - fontHeight * 0.89;
+                const tightH = fontHeight * 1.15;
+                const fontSize = Math.max(8, Math.round(fontHeight));
+                const pdfX = item.transform[4];
+                const pdfY = item.transform[5];
+                const rawPdfW = item.width || (totalW / vpScaleX);
+
+                // 偵測原本 PDF 文字的字型（襯線 / 等寬 / 無襯線）與粗斜體樣式
+                const styleInfo = styles[item.fontName] || {};
+                const fontSignature = `${item.fontName || ''} ${styleInfo.fontFamily || ''}`.toLowerCase();
+                const bold = /bold|black|heavy|semibold|demibold|700|800|900/.test(fontSignature);
+                const italic = /italic|oblique|slanted/.test(fontSignature);
+                let fontFamily = "'Noto Sans TC', 'Inter', sans-serif";
+                if (/mono|courier|consolas|menlo|monaco/.test(fontSignature)) {
+                    fontFamily = "'Courier New', monospace";
+                } else if (/serif|times|georgia|garamond|palatino|minion|cambria/.test(fontSignature)) {
+                    fontFamily = "Georgia, 'Times New Roman', serif";
+                }
+
+                // 若單一 PDF 文本片段包含多個以空格或冒號分隔的字詞，自動拆分為獨立可直接點擊的詞組
+                const tokens = item.str.split(/(\s+|(?<=[：:]))/);
+                if (tokens.length > 1) {
+                    const totalLen = item.str.length || 1;
+                    let charOffset = 0;
+                    tokens.forEach((tok, tIdx) => {
+                        const tokLen = tok.length;
+                        if (tok && tok.trim()) {
+                            const ratio = charOffset / totalLen;
+                            const tokX = tx[4] + totalW * ratio;
+                            const tokW = Math.max(6, totalW * (tokLen / totalLen));
+                            rawItems.push({
+                                id: `txt_${pageNum}_${idx}_${tIdx}`,
+                                str: tok,
+                                origStr: tok,
+                                x: tokX,
+                                y: topY,
+                                w: tokW,
+                                h: tightH,
+                                pdfX: pdfX + rawPdfW * ratio,
+                                pdfY,
+                                pdfW: rawPdfW * (tokLen / totalLen),
+                                fontSize,
+                                fontFamily,
+                                bold,
+                                italic,
+                                edited: false
+                            });
+                        }
+                        charOffset += tokLen;
+                    });
+                    return;
+                }
+
+                rawItems.push({
+                    id: `txt_${pageNum}_${idx}`,
+                    str: item.str,
+                    origStr: item.str,
+                    x: tx[4],
+                    y: topY,
+                    w: totalW,
+                    h: tightH,
+                    pdfX,
+                    pdfY,
+                    pdfW: rawPdfW,
+                    fontSize,
+                    fontFamily,
+                    bold,
+                    italic,
+                    edited: false
+                });
+            });
+
+            // 僅合併同一單字內被拆開的緊密相鄰字元（間距 <= 0.16 字高），保留字詞獨立性
+            rawItems.sort((a, b) => (Math.abs(a.y - b.y) < 3.5 ? a.x - b.x : a.y - b.y));
+            const merged = [];
+            for (const item of rawItems) {
+                const prev = merged[merged.length - 1];
+                if (prev) {
+                    const sameLine = Math.abs(prev.y - item.y) <= Math.max(prev.h, item.h) * 0.35;
+                    const similarSize = Math.abs(prev.fontSize - item.fontSize) <= 2;
+                    const sameStyle = prev.bold === item.bold && prev.italic === item.italic && prev.fontFamily === item.fontFamily;
+                    const isUnderline = /^_+$/.test(prev.str) || /^_+$/.test(item.str);
+                    const prevEndsColon = /[：:]$/.test(prev.str);
+                    const gap = item.x - (prev.x + prev.w);
+
+                    if (sameLine && similarSize && sameStyle && !isUnderline && !prevEndsColon && gap >= -2 && gap <= prev.fontSize * 0.16) {
+                        prev.str += item.str;
+                        prev.origStr += item.origStr;
+                        const newRight = Math.max(prev.x + prev.w, item.x + item.w);
+                        const newTop = Math.min(prev.y, item.y);
+                        const newBottom = Math.max(prev.y + prev.h, item.y + item.h);
+                        prev.x = Math.min(prev.x, item.x);
+                        prev.y = newTop;
+                        prev.w = newRight - prev.x;
+                        prev.h = newBottom - newTop;
+                        prev.pdfW = (prev.pdfW || 0) + (item.pdfW || 0);
+                        continue;
+                    }
+                }
+                merged.push({ ...item });
+            }
+            return merged;
+        }
+
         async function openPdfInEditor(arrayBuffer, filename) {
+            const pdfBytesCopy = arrayBuffer.slice(0);
             const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
             const pdf = await loadingTask.promise;
             const loadedPages = [];
@@ -1262,27 +2061,28 @@
                 const ctx = canvas.getContext('2d');
                 await page.render({ canvasContext: ctx, viewport: renderViewport }).promise;
 
-                // 提取文字座標供搜尋功能使用
-                const textContent = await page.getTextContent();
-                const textItems = textContent.items.map(item => {
-                    const tx = pdfjsLib.Util.transform(baseViewport.transform, item.transform);
-                    const fontHeight = Math.hypot(tx[2], tx[3]) || 12;
-                    return {
-                        str: item.str,
-                        x: tx[4],
-                        y: tx[5] - fontHeight,
-                        w: item.width || (item.str.length * fontHeight * 0.55),
-                        h: fontHeight * 1.2
-                    };
-                }).filter(t => t.str && t.str.trim());
+                const origUrl = canvas.toDataURL('image/png');
+                const workingCanvas = document.createElement('canvas');
+                workingCanvas.width = canvas.width;
+                workingCanvas.height = canvas.height;
+                workingCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+                const textItems = await extractPageTextItems(page, baseViewport, i);
 
                 loadedPages.push({
                     id: `page_${i}_${Date.now()}`,
                     width: baseViewport.width,
                     height: baseViewport.height,
                     rotation: 0,
-                    bgDataUrl: canvas.toDataURL('image/jpeg', 0.92),
+                    origPdfRotation: page.rotate || 0,
+                    origBgDataUrl: origUrl,
+                    origBgCanvas: canvas,
+                    bgDataUrl: origUrl,
+                    bgCanvas: workingCanvas,
+                    sourcePdfBytes: pdfBytesCopy,
+                    sourcePageIndex: i - 1,
                     textItems,
+                    erasedRegions: [],
                     elements: []
                 });
             }
@@ -1303,6 +2103,314 @@
             setEditorTool('editText');
         }
 
+        // 智慧筆劃擦除：僅移除文字墨水像素，自動保留水平底線、表格框線與紙張底色（不覆蓋整塊方塊）
+        function eraseTextInkCleanly(ctx, canvasW, canvasH, scaleX, scaleY, reg) {
+            const x0 = Math.max(0, Math.floor((reg.x - 1) * scaleX));
+            const y0 = Math.max(0, Math.floor((reg.y - 1) * scaleY));
+            const x1 = Math.min(canvasW - 1, Math.ceil((reg.x + reg.w + 1) * scaleX));
+            const y1 = Math.min(canvasH - 1, Math.ceil((reg.y + reg.h + 1) * scaleY));
+            const rw = x1 - x0 + 1;
+            const rh = y1 - y0 + 1;
+            if (rw <= 2 || rh <= 2) return;
+
+            const pad = 6;
+            const sx0 = Math.max(0, x0 - pad);
+            const sy0 = Math.max(0, y0 - pad);
+            const sx1 = Math.min(canvasW - 1, x1 + pad);
+            const sy1 = Math.min(canvasH - 1, y1 + pad);
+            const sw = sx1 - sx0 + 1;
+            const sh = sy1 - sy0 + 1;
+
+            const imgData = ctx.getImageData(sx0, sy0, sw, sh);
+            const d = imgData.data;
+            const getPix = (ax, ay) => {
+                const lx = Math.min(sw - 1, Math.max(0, ax - sx0));
+                const ly = Math.min(sh - 1, Math.max(0, ay - sy0));
+                const i = (ly * sw + lx) * 4;
+                return [d[i], d[i + 1], d[i + 2]];
+            };
+
+            // 計算周圍紙張底色中位數
+            const rs = [], gs = [], bs = [];
+            for (let ay = sy0; ay <= sy1; ay++) {
+                for (let ax = sx0; ax <= sx1; ax++) {
+                    if (ax < x0 || ax > x1 || ay < y0 || ay > y1) {
+                        const [r, g, b] = getPix(ax, ay);
+                        rs.push(r); gs.push(g); bs.push(b);
+                    }
+                }
+            }
+            rs.sort((a, b) => a - b);
+            gs.sort((a, b) => a - b);
+            bs.sort((a, b) => a - b);
+            const mid = Math.floor(rs.length / 2);
+            const bgR = rs.length ? rs[mid] : 255;
+            const bgG = gs.length ? gs[mid] : 255;
+            const bgB = bs.length ? bs[mid] : 255;
+
+            const colorDist = (c1, c2) => Math.abs(c1[0] - c2[0]) + Math.abs(c1[1] - c2[1]) + Math.abs(c1[2] - c2[2]);
+
+            // 偵測哪些橫列屬於貫穿文字左右兩側的連續底線或表格橫線，予以完整保留
+            const preserveRow = new Map();
+            for (let ay = y0; ay <= y1; ay++) {
+                const leftPix = getPix(Math.max(0, x0 - 3), ay);
+                const rightPix = getPix(Math.min(canvasW - 1, x1 + 3), ay);
+                const leftIsLine = colorDist(leftPix, [bgR, bgG, bgB]) > 42;
+                const rightIsLine = colorDist(rightPix, [bgR, bgG, bgB]) > 42;
+                if (leftIsLine && rightIsLine && colorDist(leftPix, rightPix) < 55) {
+                    preserveRow.set(ay, [
+                        Math.round((leftPix[0] + rightPix[0]) / 2),
+                        Math.round((leftPix[1] + rightPix[1]) / 2),
+                        Math.round((leftPix[2] + rightPix[2]) / 2)
+                    ]);
+                }
+            }
+
+            // 逐像素將文字墨水還原為周圍自然背景色，同時保留連續線條
+            for (let ay = y0; ay <= y1; ay++) {
+                const lineColor = preserveRow.get(ay);
+                const leftRef = getPix(Math.max(0, x0 - 2), ay);
+                const rightRef = getPix(Math.min(canvasW - 1, x1 + 2), ay);
+                const leftClean = colorDist(leftRef, [bgR, bgG, bgB]) < 35;
+                const rightClean = colorDist(rightRef, [bgR, bgG, bgB]) < 35;
+
+                for (let ax = x0; ax <= x1; ax++) {
+                    const lx = ax - sx0;
+                    const ly = ay - sy0;
+                    const idx = (ly * sw + lx) * 4;
+
+                    if (lineColor) {
+                        d[idx] = lineColor[0];
+                        d[idx + 1] = lineColor[1];
+                        d[idx + 2] = lineColor[2];
+                        continue;
+                    }
+
+                    const cur = [d[idx], d[idx + 1], d[idx + 2]];
+                    if (colorDist(cur, [bgR, bgG, bgB]) > 22) {
+                        const tx = (ax - x0) / Math.max(1, rw - 1);
+                        const cL = leftClean ? leftRef : [bgR, bgG, bgB];
+                        const cR = rightClean ? rightRef : [bgR, bgG, bgB];
+                        d[idx] = Math.round(cL[0] * (1 - tx) + cR[0] * tx);
+                        d[idx + 1] = Math.round(cL[1] * (1 - tx) + cR[1] * tx);
+                        d[idx + 2] = Math.round(cL[2] * (1 - tx) + cR[2] * tx);
+                    }
+                }
+            }
+
+            ctx.putImageData(imgData, sx0, sy0);
+        }
+
+        function rebuildPageCanvasFromErasedRegions(page) {
+            const origCanvas = page.origBgCanvas;
+            if (!origCanvas) return;
+            const work = document.createElement('canvas');
+            work.width = origCanvas.width;
+            work.height = origCanvas.height;
+            const ctx = work.getContext('2d');
+            ctx.drawImage(origCanvas, 0, 0);
+
+            const scaleX = work.width / page.width;
+            const scaleY = work.height / page.height;
+            for (const reg of (page.erasedRegions || [])) {
+                eraseTextInkCleanly(ctx, work.width, work.height, scaleX, scaleY, reg);
+            }
+            page.bgCanvas = work;
+            page.bgDataUrl = work.toDataURL('image/png');
+        }
+
+        // 偵測指定文字區域的背景底色與原本文字顏色（使用周邊中位數取樣避免單點雜訊）
+        const pageBgCanvasCache = new Map();
+        function getPageOffscreenCanvas(page) {
+            let offCanvas = page.origBgCanvas || page.bgCanvas || pageBgCanvasCache.get(page.bgDataUrl);
+            if (!offCanvas) {
+                const img = new Image();
+                img.src = page.origBgDataUrl || page.bgDataUrl;
+                if (!img.complete || !img.width) return null;
+                offCanvas = document.createElement('canvas');
+                offCanvas.width = img.width;
+                offCanvas.height = img.height;
+                offCanvas.getContext('2d').drawImage(img, 0, 0);
+                pageBgCanvasCache.set(page.bgDataUrl, offCanvas);
+            }
+            return offCanvas;
+        }
+
+        function sampleTextStyleFromCanvas(page, x, y, w = 20, h = 16) {
+            try {
+                const offCanvas = getPageOffscreenCanvas(page);
+                if (!offCanvas) return { bgColor: '#ffffff', textColor: '#111827' };
+                const ctx = offCanvas.getContext('2d');
+                const scaleX = offCanvas.width / page.width;
+                const scaleY = offCanvas.height / page.height;
+                const clampX = (vx) => Math.min(offCanvas.width - 1, Math.max(0, Math.round(vx * scaleX)));
+                const clampY = (vy) => Math.min(offCanvas.height - 1, Math.max(0, Math.round(vy * scaleY)));
+
+                // 取樣外框四週像素的中位數作為真實背景底色
+                const x0 = clampX(Math.max(0, x - 3));
+                const y0 = clampY(Math.max(0, y - 3));
+                const x1 = clampX(Math.min(page.width, x + w + 3));
+                const y1 = clampY(Math.min(page.height, y + h + 3));
+                const rw = Math.max(1, x1 - x0);
+                const rh = Math.max(1, y1 - y0);
+                const patch = ctx.getImageData(x0, y0, rw, rh).data;
+
+                const rs = [], gs = [], bs = [];
+                for (let py = 0; py < rh; py++) {
+                    for (let px = 0; px < rw; px++) {
+                        if (py <= 1 || py >= rh - 2 || px <= 1 || px >= rw - 2) {
+                            const idx = (py * rw + px) * 4;
+                            if (patch[idx + 3] < 200) {
+                                rs.push(255); gs.push(255); bs.push(255);
+                            } else {
+                                rs.push(patch[idx]); gs.push(patch[idx + 1]); bs.push(patch[idx + 2]);
+                            }
+                        }
+                    }
+                }
+                rs.sort((a, b) => a - b);
+                gs.sort((a, b) => a - b);
+                bs.sort((a, b) => a - b);
+                const mid = Math.floor(rs.length / 2);
+                const bgR = rs.length ? rs[mid] : 255;
+                const bgG = gs.length ? gs[mid] : 255;
+                const bgB = bs.length ? bs[mid] : 255;
+                const bgColor = `rgb(${bgR}, ${bgG}, ${bgB})`;
+
+                // 取樣區域內與背景對比度最高的前景文字顏色
+                const sx = clampX(x);
+                const sy = clampY(y);
+                const sw = Math.max(1, Math.min(offCanvas.width - sx, Math.round(w * scaleX)));
+                const sh = Math.max(1, Math.min(offCanvas.height - sy, Math.round(h * scaleY)));
+                const region = ctx.getImageData(sx, sy, sw, sh).data;
+
+                let bestDiff = 45;
+                let txtR = 17, txtG = 24, txtB = 39;
+                const step = Math.max(4, Math.floor((sw * sh) / 250) * 4);
+                for (let i = 0; i < region.length; i += step) {
+                    const r = region[i], g = region[i + 1], b = region[i + 2];
+                    const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+                    if (diff > bestDiff) {
+                        bestDiff = diff;
+                        txtR = r; txtG = g; txtB = b;
+                    }
+                }
+                const toHex = (n) => n.toString(16).padStart(2, '0');
+                return {
+                    bgColor,
+                    textColor: `#${toHex(txtR)}${toHex(txtG)}${toHex(txtB)}`
+                };
+            } catch (e) {
+                return { bgColor: '#ffffff', textColor: '#111827' };
+            }
+        }
+
+        // 針對掃描檔 / 圖片型 PDF：點擊文字位置時自動偵測該行文字邊界
+        function detectTextLineAtPoint(page, clickX, clickY) {
+            try {
+                const offCanvas = getPageOffscreenCanvas(page);
+                if (!offCanvas) return null;
+                const ctx = offCanvas.getContext('2d');
+                const scaleX = offCanvas.width / page.width;
+                const scaleY = offCanvas.height / page.height;
+                const cx = Math.min(offCanvas.width - 1, Math.max(0, Math.round(clickX * scaleX)));
+                const cy = Math.min(offCanvas.height - 1, Math.max(0, Math.round(clickY * scaleY)));
+
+                const winHalfW = Math.round(90 * scaleX);
+                const winHalfH = Math.round(45 * scaleY);
+                const wx0 = Math.max(0, cx - winHalfW);
+                const wy0 = Math.max(0, cy - winHalfH);
+                const wx1 = Math.min(offCanvas.width - 1, cx + winHalfW);
+                const wy1 = Math.min(offCanvas.height - 1, cy + winHalfH);
+                const ww = wx1 - wx0 + 1;
+                const wh = wy1 - wy0 + 1;
+                const data = ctx.getImageData(wx0, wy0, ww, wh).data;
+
+                const rs = [], gs = [], bs = [];
+                for (let y = 0; y < wh; y += 2) {
+                    for (let x = 0; x < ww; x += 2) {
+                        const i = (y * ww + x) * 4;
+                        rs.push(data[i]); gs.push(data[i + 1]); bs.push(data[i + 2]);
+                    }
+                }
+                rs.sort((a, b) => a - b);
+                gs.sort((a, b) => a - b);
+                bs.sort((a, b) => a - b);
+                const mid = Math.floor(rs.length / 2);
+                const bgR = rs[mid], bgG = gs[mid], bgB = bs[mid];
+
+                const isInk = (absX, absY) => {
+                    if (absX < 0 || absY < 0 || absX >= offCanvas.width || absY >= offCanvas.height) return false;
+                    const p = ctx.getImageData(absX, absY, 1, 1).data;
+                    return (Math.abs(p[0] - bgR) + Math.abs(p[1] - bgG) + Math.abs(p[2] - bgB)) > 48;
+                };
+
+                // 檢查點擊處附近是否有文字筆劃
+                let foundInkY = -1;
+                const searchR = Math.round(14 * scaleY);
+                outer: for (let dy = 0; dy <= searchR; dy++) {
+                    for (const sy of (dy === 0 ? [0] : [-dy, dy])) {
+                        for (let dx = -searchR; dx <= searchR; dx += 2) {
+                            if (isInk(cx + dx, cy + sy)) {
+                                foundInkY = cy + sy;
+                                break outer;
+                            }
+                        }
+                    }
+                }
+                if (foundInkY === -1) return null;
+
+                // 向上與向下尋找該行文字的垂直範圍
+                const maxLineH = Math.round(52 * scaleY);
+                let topY = foundInkY;
+                let botY = foundInkY;
+                const checkRowHasInk = (rowY) => {
+                    for (let dx = -Math.round(22 * scaleX); dx <= Math.round(22 * scaleX); dx += 2) {
+                        if (isInk(cx + dx, rowY)) return true;
+                    }
+                    return false;
+                };
+                while (topY > 0 && (foundInkY - topY) < maxLineH && checkRowHasInk(topY - 1)) topY--;
+                while (botY < offCanvas.height - 1 && (botY - topY) < maxLineH && checkRowHasInk(botY + 1)) botY++;
+
+                const lineH = Math.max(Math.round(10 * scaleY), botY - topY + 1);
+                const maxGap = Math.max(Math.round(14 * scaleX), Math.round(lineH * 0.85));
+
+                const checkColHasInk = (colX) => {
+                    for (let py = topY; py <= botY; py += 2) {
+                        if (isInk(colX, py)) return true;
+                    }
+                    return false;
+                };
+
+                let leftX = cx;
+                let gap = 0;
+                while (leftX > 0 && gap <= maxGap) {
+                    if (checkColHasInk(leftX - 1)) gap = 0;
+                    else gap++;
+                    leftX--;
+                }
+                leftX += gap;
+
+                let rightX = cx;
+                gap = 0;
+                while (rightX < offCanvas.width - 1 && gap <= maxGap) {
+                    if (checkColHasInk(rightX + 1)) gap = 0;
+                    else gap++;
+                    rightX++;
+                }
+                rightX -= gap;
+
+                const boxX = Math.max(0, leftX / scaleX - 2);
+                const boxY = Math.max(0, topY / scaleY - 2);
+                const boxW = Math.max(24, (rightX - leftX) / scaleX + 4);
+                const boxH = Math.max(14, (botY - topY) / scaleY + 4);
+                return { x: boxX, y: boxY, w: boxW, h: boxH };
+            } catch (e) {
+                return null;
+            }
+        }
+
         function enterEditorWorkspace() {
             document.getElementById('hero-section').classList.add('hidden');
             document.getElementById('drop-zone-container').classList.add('hidden');
@@ -1311,7 +2419,6 @@
             document.getElementById('editor-zone').classList.remove('hidden');
 
             document.getElementById('ed-filename').textContent = editorState.filename;
-            document.getElementById('ed-hint-banner').textContent = '提示：點選「新增文字」在畫面上點擊即可輸入文字；點選「編輯文字」可拖曳移動、調整大小或雙擊修改任何物件。';
             updateUndoRedoButtons();
             renderAllEditorPages();
         }
@@ -1322,9 +2429,13 @@
                 btn.classList.toggle('active', btn.getAttribute('data-ed-tool') === tool);
             });
             const hint = document.getElementById('ed-hint-banner');
+            const activePage = editorState.pages[editorState.activePageIndex || 0];
+            const hasSelectableText = activePage && activePage.textItems && activePage.textItems.length > 0;
             const hints = {
-                'addText': '新增文字模式：點擊頁面任意位置即可建立透明背景文字框並輸入內容。',
-                'editText': '編輯文字模式：點擊選取物件可拖曳移動或調整大小，雙擊文字框可直接修改內容。',
+                'addText': '新增文字模式：點擊頁面任意位置即可直接輸入新文字。',
+                'editText': hasSelectableText
+                    ? '直接編輯文本模式：點擊頁面上的任何文字即可原地修改內容（自動保留原字型與底線背景），清空內容即刪除該段文字。'
+                    : '直接編輯文本模式（掃描/圖片 PDF）：直接點擊畫面上的文字行即可原地擦除舊字並輸入新文字。',
                 'draw': '手繪模式：按住滑鼠左鍵或觸控拖曳即可自由繪製線條。',
                 'shape': '形狀繪製模式：在頁面上按住拖曳即可繪製直線、箭頭、方框、圓形或白色遮罩。',
                 'highlight': '螢光標示模式：按住滑鼠拖曳即可在文字上方加上半透明螢光標記。'
@@ -1356,14 +2467,22 @@
             const ctx = blankCanvas.getContext('2d');
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, blankCanvas.width, blankCanvas.height);
+            const blankUrl = blankCanvas.toDataURL('image/png');
 
             editorState.pages.push({
                 id: 'page_' + Date.now(),
                 width: 595,
                 height: 842,
                 rotation: 0,
-                bgDataUrl: blankCanvas.toDataURL('image/png'),
+                origPdfRotation: 0,
+                origBgDataUrl: blankUrl,
+                origBgCanvas: blankCanvas,
+                bgDataUrl: blankUrl,
+                bgCanvas: blankCanvas,
+                sourcePdfBytes: null,
+                sourcePageIndex: -1,
                 textItems: [],
+                erasedRegions: [],
                 elements: []
             });
             editorState.activePageIndex = editorState.pages.length - 1;
@@ -1377,6 +2496,7 @@
             try {
                 snapshotEditorHistory();
                 const bytes = await file.arrayBuffer();
+                const bytesCopy = bytes.slice(0);
                 const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytes) }).promise;
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
@@ -1386,13 +2506,26 @@
                     canvas.width = rvp.width;
                     canvas.height = rvp.height;
                     await page.render({ canvasContext: canvas.getContext('2d'), viewport: rvp }).promise;
+                    const origUrl = canvas.toDataURL('image/png');
+                    const workCanvas = document.createElement('canvas');
+                    workCanvas.width = canvas.width;
+                    workCanvas.height = canvas.height;
+                    workCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                    const textItems = await extractPageTextItems(page, vp, editorState.pages.length + 1);
                     editorState.pages.push({
                         id: `ins_${i}_${Date.now()}`,
                         width: vp.width,
                         height: vp.height,
                         rotation: 0,
-                        bgDataUrl: canvas.toDataURL('image/jpeg', 0.92),
-                        textItems: [],
+                        origPdfRotation: page.rotate || 0,
+                        origBgDataUrl: origUrl,
+                        origBgCanvas: canvas,
+                        bgDataUrl: origUrl,
+                        bgCanvas: workCanvas,
+                        sourcePdfBytes: bytesCopy,
+                        sourcePageIndex: i - 1,
+                        textItems,
+                        erasedRegions: [],
                         elements: []
                     });
                 }
@@ -1404,9 +2537,16 @@
 
         function updateDeleteObjButton() {
             document.getElementById('ed-delete-obj-btn').disabled = !editorState.selectedElementId;
+            const restoreBtn = document.getElementById('ed-restore-text-btn');
+            if (restoreBtn) {
+                const sel = getSelectedElement();
+                const canRestore = !!(sel && sel.element && sel.element.origText !== undefined);
+                restoreBtn.classList.toggle('hidden', !canRestore);
+            }
         }
 
         function getSelectedElement() {
+            if (!editorState.selectedElementId) return null;
             for (let pIdx = 0; pIdx < editorState.pages.length; pIdx++) {
                 const el = editorState.pages[pIdx].elements.find(item => item.id === editorState.selectedElementId);
                 if (el) return { pageIndex: pIdx, element: el };
@@ -1418,33 +2558,71 @@
             if (!el) return;
             if (el.color) {
                 currentStyle.color = el.color;
-                document.getElementById('ed-color-dot').style.backgroundColor = el.color;
-                document.getElementById('ed-color-picker').value = el.color;
+                const dot = document.getElementById('ed-color-dot');
+                const picker = document.getElementById('ed-color-picker');
+                if (dot) dot.style.backgroundColor = el.color;
+                if (picker && el.color.startsWith('#')) picker.value = el.color;
             }
-            if (el.fontSize) {
-                currentStyle.fontSize = el.fontSize;
-                document.getElementById('ed-font-size').value = String(el.fontSize);
+            if (el.type === 'text') {
+                if (el.fontSize) {
+                    currentStyle.fontSize = el.fontSize;
+                    const sizeSel = document.getElementById('ed-font-size');
+                    if (sizeSel && sizeSel.options.length) {
+                        const closest = Array.from(sizeSel.options).reduce((prev, curr) =>
+                            Math.abs(Number(curr.value) - el.fontSize) < Math.abs(Number(prev.value) - el.fontSize) ? curr : prev
+                        );
+                        sizeSel.value = closest.value;
+                    }
+                }
+                if (el.fontFamily) {
+                    currentStyle.fontFamily = el.fontFamily;
+                    const famSel = document.getElementById('ed-font-family');
+                    if (famSel) famSel.value = el.fontFamily;
+                }
+                currentStyle.bold = !!el.bold;
+                currentStyle.italic = !!el.italic;
+                currentStyle.bgFill = !!el.bgFill;
+                document.getElementById('ed-bold-btn')?.classList.toggle('bg-gray-200', currentStyle.bold);
+                document.getElementById('ed-italic-btn')?.classList.toggle('bg-gray-200', currentStyle.italic);
+                document.getElementById('ed-bg-toggle')?.classList.toggle('bg-gray-200', currentStyle.bgFill);
             }
-            if (el.fontFamily) {
-                currentStyle.fontFamily = el.fontFamily;
-                document.getElementById('ed-font-family').value = el.fontFamily;
-            }
-            currentStyle.bold = !!el.bold;
-            currentStyle.italic = !!el.italic;
-            currentStyle.bgFill = !!el.bgFill;
-            document.getElementById('ed-bold-btn').classList.toggle('bg-gray-200', currentStyle.bold);
-            document.getElementById('ed-italic-btn').classList.toggle('bg-gray-200', currentStyle.italic);
-            document.getElementById('ed-bg-toggle').classList.toggle('bg-gray-200', currentStyle.bgFill);
         }
 
-        function updateStyleColor(hex) {
-            currentStyle.color = hex;
-            document.getElementById('ed-color-dot').style.backgroundColor = hex;
+        function applyStyleToActiveTextDom(el) {
+            const dom = document.querySelector(`[data-el-text-id="${el.id}"]`);
+            if (!dom) return false;
+            dom.style.color = el.color;
+            dom.style.fontSize = (el.fontSize * editorState.zoom) + 'px';
+            dom.style.fontFamily = el.fontFamily;
+            dom.style.fontWeight = el.bold ? '700' : '400';
+            dom.style.fontStyle = el.italic ? 'italic' : 'normal';
+            dom.style.backgroundColor = el.bgFill ? (el.bgColor || '#ffffff') : 'transparent';
+            return true;
+        }
+
+        function updateStyleColor(color) {
+            currentStyle.color = color;
+            const dot = document.getElementById('ed-color-dot');
+            const picker = document.getElementById('ed-color-picker');
+            if (dot) dot.style.backgroundColor = color;
+            if (picker && color.startsWith('#')) picker.value = color;
+
             const sel = getSelectedElement();
             if (sel) {
                 snapshotEditorHistory();
-                sel.element.color = hex;
-                renderAllEditorPages();
+                sel.element.color = color;
+                if (sel.element.type === 'text') {
+                    if (!applyStyleToActiveTextDom(sel.element)) renderAllEditorPages();
+                } else {
+                    renderAllEditorPages();
+                }
+            }
+        }
+
+        function restoreSelectedTextElement() {
+            const sel = getSelectedElement();
+            if (sel && sel.element && sel.element.origText !== undefined) {
+                restoreOriginalTextElement(sel.pageIndex, sel.element.id);
             }
         }
 
@@ -1454,7 +2632,7 @@
             if (sel && sel.element.type === 'text') {
                 snapshotEditorHistory();
                 sel.element.fontSize = Number(size);
-                renderAllEditorPages();
+                if (!applyStyleToActiveTextDom(sel.element)) renderAllEditorPages();
             }
         }
 
@@ -1464,7 +2642,7 @@
             if (sel && sel.element.type === 'text') {
                 snapshotEditorHistory();
                 sel.element.fontFamily = family;
-                renderAllEditorPages();
+                if (!applyStyleToActiveTextDom(sel.element)) renderAllEditorPages();
             }
         }
 
@@ -1475,7 +2653,7 @@
             if (sel && sel.element.type === 'text') {
                 snapshotEditorHistory();
                 sel.element.bold = currentStyle.bold;
-                renderAllEditorPages();
+                if (!applyStyleToActiveTextDom(sel.element)) renderAllEditorPages();
             }
         }
 
@@ -1486,7 +2664,7 @@
             if (sel && sel.element.type === 'text') {
                 snapshotEditorHistory();
                 sel.element.italic = currentStyle.italic;
-                renderAllEditorPages();
+                if (!applyStyleToActiveTextDom(sel.element)) renderAllEditorPages();
             }
         }
 
@@ -1497,7 +2675,8 @@
             if (sel && sel.element.type === 'text') {
                 snapshotEditorHistory();
                 sel.element.bgFill = currentStyle.bgFill;
-                renderAllEditorPages();
+                if (sel.element.bgFill && !sel.element.bgColor) sel.element.bgColor = '#ffffff';
+                if (!applyStyleToActiveTextDom(sel.element)) renderAllEditorPages();
             }
         }
 
@@ -1538,6 +2717,28 @@
             renderAllEditorPages();
         }
 
+        function restoreOriginalTextElement(pIdx, elId) {
+            const page = editorState.pages[pIdx];
+            if (!page) return;
+            const el = page.elements.find(item => item.id === elId);
+            if (!el) return;
+            snapshotEditorHistory();
+            if (el.erasedRegionId && page.erasedRegions) {
+                page.erasedRegions = page.erasedRegions.filter(er => er.id !== el.erasedRegionId);
+                rebuildPageCanvasFromErasedRegions(page);
+            }
+            if (el.textItemId && page.textItems) {
+                const ti = page.textItems.find(t => t.id === el.textItemId);
+                if (ti) ti.edited = false;
+            }
+            page.elements = page.elements.filter(item => item.id !== elId);
+            if (editorState.selectedElementId === elId) {
+                editorState.selectedElementId = null;
+                updateDeleteObjButton();
+            }
+            renderAllEditorPages();
+        }
+
         document.addEventListener('keydown', (e) => {
             if (document.getElementById('editor-zone').classList.contains('hidden')) return;
             const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
@@ -1556,10 +2757,13 @@
             }
         });
 
-        function renderAllEditorPages(autoFocusTextId = null) {
+        function renderAllEditorPages(autoFocusTextInfo = null) {
             const viewport = document.getElementById('editor-viewport');
             viewport.innerHTML = '';
             document.getElementById('ed-page-indicator').textContent = t('status_total_pages').replace('{n}', editorState.pages.length);
+
+            const focusId = typeof autoFocusTextInfo === 'string' ? autoFocusTextInfo : (autoFocusTextInfo && autoFocusTextInfo.id);
+            const focusCaret = (autoFocusTextInfo && typeof autoFocusTextInfo === 'object') ? autoFocusTextInfo.caretOffset : null;
 
             editorState.pages.forEach((page, pIdx) => {
                 const isRot90 = (page.rotation % 180) !== 0;
@@ -1611,10 +2815,78 @@
                 interactionLayer.style.cursor = (editorState.activeTool === 'addText') ? 'text' :
                     (['draw', 'shape', 'highlight'].includes(editorState.activeTool) ? 'crosshair' : 'default');
                 wrapper.appendChild(interactionLayer);
-
                 setupPagePointerEvents(interactionLayer, svgLayer, page, pIdx, logicalW, logicalH);
 
-                // 渲染所有已加入的物件
+                // 原生 PDF 可點擊文字層（直接點擊原地進入無邊框內聯編輯）
+                if (editorState.activeTool === 'editText') {
+                    (page.textItems || []).forEach(ti => {
+                        if (ti.edited) return;
+                        const hit = document.createElement('div');
+                        hit.className = 'absolute cursor-text hover:bg-blue-500/10 hover:ring-1 hover:ring-blue-400/50 rounded-[2px] transition-colors z-10';
+                        hit.style.left = (ti.x * editorState.zoom) + 'px';
+                        hit.style.top = (ti.y * editorState.zoom) + 'px';
+                        hit.style.width = Math.max(8, ti.w * editorState.zoom) + 'px';
+                        hit.style.height = Math.max(12, ti.h * editorState.zoom) + 'px';
+                        hit.title = '點擊直接修改文字';
+
+                        hit.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const rect = hit.getBoundingClientRect();
+                            const clickRatio = Math.min(1, Math.max(0, (e.clientX - rect.left) / Math.max(1, rect.width)));
+                            const caretOffset = Math.round(clickRatio * (ti.str || '').length);
+
+                            snapshotEditorHistory();
+                            const sampled = sampleTextStyleFromCanvas(page, ti.x, ti.y, ti.w, ti.h);
+                            ti.edited = true;
+
+                            const erasedId = 'er_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5);
+                            if (!page.erasedRegions) page.erasedRegions = [];
+                            page.erasedRegions.push({
+                                id: erasedId,
+                                x: ti.x,
+                                y: ti.y,
+                                w: ti.w,
+                                h: ti.h,
+                                pdfX: ti.pdfX,
+                                pdfY: ti.pdfY,
+                                pdfW: ti.pdfW,
+                                origStr: ti.origStr,
+                                bgColor: sampled.bgColor
+                            });
+                            rebuildPageCanvasFromErasedRegions(page);
+
+                            const newEl = {
+                                id: 'el_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5),
+                                type: 'text',
+                                x: ti.x,
+                                y: ti.y,
+                                w: Math.max(24, ti.w + 8),
+                                h: Math.max(16, ti.h),
+                                text: ti.str,
+                                origText: ti.origStr,
+                                textItemId: ti.id,
+                                erasedRegionId: erasedId,
+                                color: sampled.textColor,
+                                bgColor: sampled.bgColor,
+                                fontSize: ti.fontSize || 14,
+                                fontFamily: ti.fontFamily || "'Noto Sans TC', 'Inter', sans-serif",
+                                bold: !!ti.bold,
+                                italic: !!ti.italic,
+                                bgFill: false
+                            };
+                            page.elements.push(newEl);
+                            editorState.selectedElementId = newEl.id;
+                            editorState.activePageIndex = pIdx;
+                            syncToolbarFromElement(newEl);
+                            updateDeleteObjButton();
+                            renderAllEditorPages({ id: newEl.id, caretOffset });
+                        });
+
+                        wrapper.appendChild(hit);
+                    });
+                }
+
+                // 渲染所有已加入或已修改的物件
                 page.elements.forEach(el => {
                     const isSelected = el.id === editorState.selectedElementId;
 
@@ -1629,7 +2901,6 @@
                         if (el.type === 'highlight') poly.setAttribute('stroke-opacity', '0.45');
                         svgLayer.appendChild(poly);
 
-                        // 點選熱區
                         const hitBox = createElementOverlayBox(el, pIdx, isSelected, true);
                         wrapper.appendChild(hitBox);
                     } else if (el.type === 'shape') {
@@ -1637,7 +2908,8 @@
                         const hitBox = createElementOverlayBox(el, pIdx, isSelected, true);
                         wrapper.appendChild(hitBox);
                     } else {
-                        const box = createElementOverlayBox(el, pIdx, isSelected, false, autoFocusTextId === el.id);
+                        const isAutoFocus = focusId === el.id;
+                        const box = createElementOverlayBox(el, pIdx, isSelected, false, isAutoFocus, isAutoFocus ? focusCaret : null);
                         wrapper.appendChild(box);
                     }
                 });
@@ -1698,7 +2970,7 @@
             }
         }
 
-        function createElementOverlayBox(el, pIdx, isSelected, isVectorHitbox, autoFocus = false) {
+        function createElementOverlayBox(el, pIdx, isSelected, isVectorHitbox, autoFocus = false, caretOffset = null) {
             const box = document.createElement('div');
             const normX = el.w < 0 ? el.x + el.w : el.x;
             const normY = el.h < 0 ? el.y + el.h : el.y;
@@ -1711,7 +2983,11 @@
             if (el.type !== 'text') box.style.height = (normH * editorState.zoom) + 'px';
             else box.style.minHeight = (normH * editorState.zoom) + 'px';
 
-            box.className = `absolute group cursor-move ${isSelected ? 'ring-2 ring-emerald-500 z-20' : 'hover:ring-1 hover:ring-blue-400 z-10'}`;
+            box.className = `absolute group ${el.type === 'text' ? 'cursor-text' : 'cursor-move'} ${
+                el.type === 'text'
+                    ? (isSelected ? 'z-20' : 'z-10')
+                    : (isSelected ? 'ring-1 ring-emerald-500 z-20' : 'hover:ring-1 hover:ring-blue-400/70 z-10')
+            }`;
             if (isVectorHitbox && !isSelected) {
                 box.style.pointerEvents = (editorState.activeTool === 'editText') ? 'auto' : 'none';
             }
@@ -1720,15 +2996,16 @@
                 const textDiv = document.createElement('div');
                 textDiv.contentEditable = true;
                 textDiv.spellcheck = false;
+                textDiv.dataset.elTextId = el.id;
                 textDiv.textContent = el.text;
-                textDiv.className = 'w-full h-full outline-none px-1 py-0.5 whitespace-pre-wrap break-words cursor-text';
+                textDiv.className = 'w-full h-full outline-none whitespace-pre-wrap break-words select-text cursor-text focus:ring-1 focus:ring-emerald-500/50 rounded-[2px]';
                 textDiv.style.color = el.color;
                 textDiv.style.fontSize = (el.fontSize * editorState.zoom) + 'px';
                 textDiv.style.fontFamily = el.fontFamily;
                 textDiv.style.fontWeight = el.bold ? '700' : '400';
                 textDiv.style.fontStyle = el.italic ? 'italic' : 'normal';
-                textDiv.style.lineHeight = '1.3';
-                textDiv.style.backgroundColor = el.bgFill ? '#ffffff' : 'transparent';
+                textDiv.style.lineHeight = '1.18';
+                textDiv.style.backgroundColor = el.bgFill ? (el.bgColor || '#ffffff') : 'transparent';
 
                 textDiv.addEventListener('focus', () => {
                     editorState.selectedElementId = el.id;
@@ -1739,21 +3016,46 @@
 
                 textDiv.addEventListener('input', () => {
                     el.text = textDiv.innerText;
-                    el.w = Math.max(40, textDiv.offsetWidth / editorState.zoom);
-                    el.h = Math.max(20, textDiv.offsetHeight / editorState.zoom);
+                    if (!el.text.includes('\n')) {
+                        box.style.width = 'auto';
+                        box.style.minWidth = Math.max(24, textDiv.scrollWidth + 6) + 'px';
+                    }
+                    el.w = Math.max(24, box.offsetWidth / editorState.zoom);
+                    el.h = Math.max(16, box.offsetHeight / editorState.zoom);
+                });
+
+                textDiv.addEventListener('blur', () => {
+                    if (!textDiv.innerText.trim()) {
+                        const page = editorState.pages[pIdx];
+                        if (page) {
+                            page.elements = page.elements.filter(item => item.id !== el.id);
+                            if (editorState.selectedElementId === el.id) {
+                                editorState.selectedElementId = null;
+                                updateDeleteObjButton();
+                            }
+                            renderAllEditorPages();
+                        }
+                    }
                 });
 
                 box.appendChild(textDiv);
-
                 if (autoFocus) {
                     setTimeout(() => {
                         textDiv.focus();
-                        const range = document.createRange();
-                        range.selectNodeContents(textDiv);
                         const sel = window.getSelection();
+                        const range = document.createRange();
+                        const textNode = textDiv.firstChild;
+                        if (textNode && typeof caretOffset === 'number') {
+                            const safeOffset = Math.min(textNode.length, Math.max(0, caretOffset));
+                            range.setStart(textNode, safeOffset);
+                            range.collapse(true);
+                        } else {
+                            range.selectNodeContents(textDiv);
+                            range.collapse(false);
+                        }
                         sel.removeAllRanges();
                         sel.addRange(range);
-                    }, 20);
+                    }, 15);
                 }
             } else if (el.type === 'image' || el.type === 'signature' || el.type === 'stamp') {
                 const img = document.createElement('img');
@@ -1772,12 +3074,13 @@
             // 拖曳移動
             box.addEventListener('mousedown', (e) => {
                 if (e.target.classList.contains('resize-handle')) return;
+                const isDragHandle = e.target.classList.contains('drag-handle');
                 editorState.selectedElementId = el.id;
                 editorState.activePageIndex = pIdx;
                 syncToolbarFromElement(el);
                 updateDeleteObjButton();
 
-                if (el.type === 'text' && document.activeElement === box.firstChild) return;
+                if (el.type === 'text' && !isDragHandle) return;
                 e.stopPropagation();
 
                 const startX = e.clientX;
@@ -1826,7 +3129,7 @@
                     const origH = el.h || 40;
                     const onResize = (mv) => {
                         el.w = Math.max(24, origW + (mv.clientX - startX) / editorState.zoom);
-                        el.h = Math.max(20, origH + (mv.clientY - startY) / editorState.zoom);
+                        el.h = Math.max(16, origH + (mv.clientY - startY) / editorState.zoom);
                         box.style.width = (el.w * editorState.zoom) + 'px';
                         if (el.type !== 'text') box.style.height = (el.h * editorState.zoom) + 'px';
                     };
@@ -1856,6 +3159,51 @@
                         editorState.selectedElementId = null;
                         updateDeleteObjButton();
                         renderAllEditorPages();
+                        return;
+                    }
+                    // 若為掃描檔或圖片型 PDF（無內嵌文字層），點擊文字行自動偵測並原地開啟編輯
+                    if (!page.textItems || page.textItems.length === 0) {
+                        const detected = detectTextLineAtPoint(page, x, y);
+                        if (detected) {
+                            snapshotEditorHistory();
+                            const sampled = sampleTextStyleFromCanvas(page, detected.x, detected.y, detected.w, detected.h);
+                            const erasedId = 'er_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5);
+                            if (!page.erasedRegions) page.erasedRegions = [];
+                            page.erasedRegions.push({
+                                id: erasedId,
+                                x: detected.x,
+                                y: detected.y,
+                                w: detected.w,
+                                h: detected.h,
+                                origStr: '',
+                                bgColor: sampled.bgColor
+                            });
+                            rebuildPageCanvasFromErasedRegions(page);
+
+                            const newEl = {
+                                id: 'el_' + Date.now(),
+                                type: 'text',
+                                x: detected.x,
+                                y: detected.y,
+                                w: Math.max(40, detected.w + 16),
+                                h: Math.max(18, detected.h),
+                                text: '輸入新文字',
+                                origText: '',
+                                erasedRegionId: erasedId,
+                                color: sampled.textColor,
+                                bgColor: sampled.bgColor,
+                                fontSize: Math.max(11, Math.min(36, Math.round(detected.h * 0.8))),
+                                fontFamily: currentStyle.fontFamily,
+                                bold: currentStyle.bold,
+                                italic: currentStyle.italic,
+                                bgFill: false
+                            };
+                            page.elements.push(newEl);
+                            editorState.selectedElementId = newEl.id;
+                            syncToolbarFromElement(newEl);
+                            updateDeleteObjButton();
+                            renderAllEditorPages(newEl.id);
+                        }
                     }
                     return;
                 }
@@ -1961,7 +3309,7 @@
             });
         }
 
-        // --- 簽名 / 印章 / 圖像 / 連結 / 備註 / 管理頁面 / 搜尋 / 列印 / 匯出 ---
+        // --- 簽名 / 印章 / 圖像 / 連結 / 備註 / 管理頁面 ---
         let sigMode = 'draw';
         let sigColor = '#111827';
         let sigDrawing = false;
@@ -2204,8 +3552,7 @@
         function rotateEditorPage(idx) {
             snapshotEditorHistory();
             const p = editorState.pages[idx];
-            p.rotation = (p.rotation + 90) % 360;
-            // 旋轉底圖 DataURL
+            p.pageRotatedInEditor = true;
             const img = new Image();
             img.onload = () => {
                 const c = document.createElement('canvas');
@@ -2215,7 +3562,8 @@
                 ctx.translate(c.width / 2, c.height / 2);
                 ctx.rotate(Math.PI / 2);
                 ctx.drawImage(img, -img.width / 2, -img.height / 2);
-                p.bgDataUrl = c.toDataURL('image/jpeg', 0.92);
+                p.bgCanvas = c;
+                p.bgDataUrl = c.toDataURL('image/png');
                 p.rotation = 0;
                 const oldW = p.width;
                 p.width = p.height;
@@ -2238,30 +3586,36 @@
         function toggleSearchBar() {
             const bar = document.getElementById('ed-search-bar');
             bar.classList.toggle('hidden');
-            if (!bar.classList.contains('hidden')) document.getElementById('ed-search-input').focus();
+            if (!bar.classList.contains('hidden')) {
+                document.getElementById('ed-search-input').focus();
+            }
         }
 
         function runPdfSearch() {
-            const q = document.getElementById('ed-search-input').value.trim().toLowerCase();
+            const query = (document.getElementById('ed-search-input').value || '').trim().toLowerCase();
+            const statusEl = document.getElementById('ed-search-status');
             editorState.searchMatches = [];
-            if (!q) {
-                document.getElementById('ed-search-status').textContent = '';
+            if (!query) {
+                statusEl.textContent = '';
                 renderAllEditorPages();
                 return;
             }
-            editorState.pages.forEach((p, pIdx) => {
-                (p.textItems || []).forEach(item => {
-                    if (item.str.toLowerCase().includes(q)) {
-                        editorState.searchMatches.push({ pageIndex: pIdx, x: item.x, y: item.y, w: item.w, h: item.h });
-                    }
-                });
-                (p.elements || []).forEach(el => {
-                    if (el.type === 'text' && el.text.toLowerCase().includes(q)) {
-                        editorState.searchMatches.push({ pageIndex: pIdx, x: el.x, y: el.y, w: el.w, h: el.h });
+            editorState.pages.forEach((page, pIdx) => {
+                (page.textItems || []).forEach(item => {
+                    if ((item.str || '').toLowerCase().includes(query)) {
+                        editorState.searchMatches.push({
+                            pageIndex: pIdx,
+                            x: item.x,
+                            y: item.y,
+                            w: item.w,
+                            h: item.h
+                        });
                     }
                 });
             });
-            document.getElementById('ed-search-status').textContent = `找到 ${editorState.searchMatches.length} 處`;
+            statusEl.textContent = editorState.searchMatches.length
+                ? `找到 ${editorState.searchMatches.length} 處`
+                : '找不到相符文字';
             renderAllEditorPages();
         }
 
@@ -2272,123 +3626,560 @@
             renderAllEditorPages();
         }
 
-        async function buildCompositedPdfBytes() {
-            const outPdf = await PDFDocument.create();
-            const scale = 2.0;
+        // 嘗試從原生 PDF 內容串流 (BT ... ET) 中直接移除被修改或刪除的舊文字運算子
+        function stripTextFromPdfPageContentStream(pdfDoc, pdfPage, targetStr) {
+            if (!targetStr || !targetStr.trim() || typeof PDFLib.decodePDFRawStream !== 'function') return false;
+            const cleanTarget = targetStr.trim();
+            // 僅對純 ASCII 字串進行字面量內容串流比對，避免誤改 CID 十六進位編碼字型
+            if (!/^[\x20-\x7E]+$/.test(cleanTarget)) return false;
 
-            for (const page of editorState.pages) {
-                const canvas = document.createElement('canvas');
-                canvas.width = Math.round(page.width * scale);
-                canvas.height = Math.round(page.height * scale);
-                const ctx = canvas.getContext('2d');
+            const escapedTarget = cleanTarget.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedPdfLit = cleanTarget.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+            const pdfLitRegex = new RegExp(`\\(${escapedPdfLit.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`, 'g');
 
-                // 繪製頁面底圖
-                const bgImg = await loadImageAsync(page.bgDataUrl);
-                ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height);
+            const contents = pdfPage.node.Contents();
+            if (!contents) return false;
 
-                // 繪製所有標註與編輯物件
-                for (const el of page.elements) {
-                    if (el.type === 'path' || el.type === 'highlight') {
-                        ctx.save();
-                        ctx.beginPath();
-                        el.points.forEach((pt, i) => {
-                            if (i === 0) ctx.moveTo(pt.x * scale, pt.y * scale);
-                            else ctx.lineTo(pt.x * scale, pt.y * scale);
-                        });
-                        ctx.strokeStyle = el.type === 'highlight' ? 'rgba(250, 204, 21, 0.45)' : el.color;
-                        ctx.lineWidth = (el.type === 'highlight' ? Math.max(14, el.strokeWidth * 3) : el.strokeWidth) * scale;
-                        ctx.lineCap = 'round';
-                        ctx.lineJoin = 'round';
-                        ctx.stroke();
-                        ctx.restore();
-                    } else if (el.type === 'shape') {
-                        ctx.save();
-                        const x1 = el.x * scale, y1 = el.y * scale;
-                        const x2 = (el.x + el.w) * scale, y2 = (el.y + el.h) * scale;
-                        const minX = Math.min(x1, x2), minY = Math.min(y1, y2);
-                        const absW = Math.abs(el.w * scale), absH = Math.abs(el.h * scale);
+            const streamRefs = [];
+            if (contents instanceof PDFLib.PDFArray) {
+                for (let i = 0; i < contents.size(); i++) streamRefs.push(contents.get(i));
+            } else {
+                streamRefs.push(contents);
+            }
 
-                        if (el.shapeType === 'whiteout') {
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(minX, minY, absW, absH);
-                        } else if (el.shapeType === 'rect') {
-                            ctx.strokeStyle = el.color;
-                            ctx.lineWidth = el.strokeWidth * scale;
-                            ctx.strokeRect(minX, minY, absW, absH);
-                        } else if (el.shapeType === 'circle') {
-                            ctx.strokeStyle = el.color;
-                            ctx.lineWidth = el.strokeWidth * scale;
-                            ctx.beginPath();
-                            ctx.ellipse(minX + absW / 2, minY + absH / 2, absW / 2, absH / 2, 0, 0, Math.PI * 2);
-                            ctx.stroke();
-                        } else if (el.shapeType === 'line' || el.shapeType === 'arrow') {
-                            ctx.strokeStyle = el.color;
-                            ctx.lineWidth = el.strokeWidth * scale;
-                            ctx.lineCap = 'round';
-                            ctx.beginPath();
-                            ctx.moveTo(x1, y1);
-                            ctx.lineTo(x2, y2);
-                            ctx.stroke();
-                            if (el.shapeType === 'arrow') {
-                                const angle = Math.atan2(y2 - y1, x2 - x1);
-                                const headLen = Math.max(12, el.strokeWidth * 3.5) * scale;
-                                ctx.fillStyle = el.color;
-                                ctx.beginPath();
-                                ctx.moveTo(x2, y2);
-                                ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
-                                ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
-                                ctx.closePath();
-                                ctx.fill();
+            let modifiedAny = false;
+            for (const ref of streamRefs) {
+                const streamObj = pdfDoc.context.lookup(ref);
+                if (!streamObj || typeof streamObj.getContents !== 'function') continue;
+                try {
+                    const decodedBytes = PDFLib.decodePDFRawStream(streamObj).decode();
+                    let streamText = '';
+                    for (let i = 0; i < decodedBytes.length; i++) streamText += String.fromCharCode(decodedBytes[i]);
+
+                    if (pdfLitRegex.test(streamText)) {
+                        const updatedText = streamText.replace(pdfLitRegex, '()');
+                        const outArr = new Uint8Array(updatedText.length);
+                        for (let i = 0; i < updatedText.length; i++) outArr[i] = updatedText.charCodeAt(i) & 0xff;
+                        const newStream = pdfDoc.context.flateStream(outArr);
+                        if (contents instanceof PDFLib.PDFArray) {
+                            const idx = contents.indexOf(ref);
+                            if (idx !== -1) contents.set(idx, pdfDoc.context.register(newStream));
+                        } else {
+                            pdfPage.node.set(PDFLib.PDFName.of('Contents'), pdfDoc.context.register(newStream));
+                        }
+                        modifiedAny = true;
+                    }
+                } catch (e) {
+                    // 若為特殊加密或未支援濾鏡串流則安全回退
+                }
+            }
+            return modifiedAny;
+        }
+
+        function parseColorToPdfRgb(colorStr) {
+            if (!colorStr) return PDFLib.rgb(0.07, 0.09, 0.15);
+            const rgbMatch = colorStr.match(/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
+            if (rgbMatch) {
+                return PDFLib.rgb(Number(rgbMatch[1]) / 255, Number(rgbMatch[2]) / 255, Number(rgbMatch[3]) / 255);
+            }
+            const hex = colorStr.replace('#', '').trim();
+            if (hex.length === 6) {
+                return PDFLib.rgb(
+                    parseInt(hex.slice(0, 2), 16) / 255,
+                    parseInt(hex.slice(2, 4), 16) / 255,
+                    parseInt(hex.slice(4, 6), 16) / 255
+                );
+            }
+            return PDFLib.rgb(0.07, 0.09, 0.15);
+        }
+
+        async function renderUnicodeTextToPng(el, scale = 4) {
+            const c = document.createElement('canvas');
+            const ctx = c.getContext('2d');
+            const fs = el.fontSize * scale;
+            const fontStr = `${el.italic ? 'italic ' : ''}${el.bold ? 'bold ' : ''}${fs}px ${el.fontFamily}`;
+            ctx.font = fontStr;
+            const lines = (el.text || '').split('\n');
+            let maxLineW = 10;
+            lines.forEach(line => {
+                maxLineW = Math.max(maxLineW, ctx.measureText(line || ' ').width);
+            });
+            const lineH = fs * 1.18;
+            c.width = Math.ceil(maxLineW + 8);
+            c.height = Math.ceil(Math.max(lineH, lines.length * lineH + 4));
+
+            ctx.font = fontStr;
+            ctx.textBaseline = 'top';
+            if (el.bgFill) {
+                ctx.fillStyle = el.bgColor || '#ffffff';
+                ctx.fillRect(0, 0, c.width, c.height);
+            }
+            ctx.fillStyle = el.color || '#111827';
+            lines.forEach((line, idx) => {
+                ctx.fillText(line, 0, idx * lineH);
+            });
+            const pngBytes = await fetch(c.toDataURL('image/png')).then(r => r.arrayBuffer());
+            return { pngBytes, widthPt: c.width / scale, heightPt: c.height / scale };
+        }
+
+        // PDF 2D 仿射矩陣相乘 (符合 PDF 規範 [x, y, 1] * M1 * M2)
+        function multiplyPdfMatrix(m1, m2) {
+            return [
+                m1[0] * m2[0] + m1[1] * m2[2],
+                m1[0] * m2[1] + m1[1] * m2[3],
+                m1[2] * m2[0] + m1[3] * m2[2],
+                m1[2] * m2[1] + m1[3] * m2[3],
+                m1[4] * m2[0] + m1[5] * m2[2] + m2[4],
+                m1[4] * m2[1] + m1[5] * m2[3] + m2[5]
+            ];
+        }
+
+        // 解析 PDF 內容串流並記錄運算子與精確字元區間
+        function tokenizePdfContentStream(str) {
+            const tokens = [];
+            let i = 0;
+            const len = str.length;
+            const isDelim = (ch) => /[\s\(\)<>\[\]\{\}\/%]/.test(ch);
+
+            while (i < len) {
+                const ch = str[i];
+                if (/\s/.test(ch)) { i++; continue; }
+                if (ch === '%') {
+                    while (i < len && str[i] !== '\n' && str[i] !== '\r') i++;
+                    continue;
+                }
+                if (ch === '(') {
+                    const start = i;
+                    let depth = 1;
+                    i++;
+                    while (i < len && depth > 0) {
+                        if (str[i] === '\\') { i += 2; continue; }
+                        if (str[i] === '(') depth++;
+                        else if (str[i] === ')') depth--;
+                        i++;
+                    }
+                    tokens.push({ type: 'str', start, end: i, raw: str.slice(start, i) });
+                    continue;
+                }
+                if (ch === '<' && str[i + 1] === '<') {
+                    const start = i;
+                    i += 2;
+                    let depth = 1;
+                    while (i < len && depth > 0) {
+                        if (str[i] === '<' && str[i + 1] === '<') { depth++; i += 2; }
+                        else if (str[i] === '>' && str[i + 1] === '>') { depth--; i += 2; }
+                        else i++;
+                    }
+                    tokens.push({ type: 'dict', start, end: i });
+                    continue;
+                }
+                if (ch === '<') {
+                    const start = i;
+                    i++;
+                    while (i < len && str[i] !== '>') i++;
+                    if (i < len) i++;
+                    tokens.push({ type: 'hex', start, end: i, raw: str.slice(start, i) });
+                    continue;
+                }
+                if (ch === '[') {
+                    const start = i;
+                    let depth = 1;
+                    const innerStrings = [];
+                    i++;
+                    while (i < len && depth > 0) {
+                        if (str[i] === '(') {
+                            const sStart = i;
+                            let pDepth = 1;
+                            i++;
+                            while (i < len && pDepth > 0) {
+                                if (str[i] === '\\') { i += 2; continue; }
+                                if (str[i] === '(') pDepth++;
+                                else if (str[i] === ')') pDepth--;
+                                i++;
+                            }
+                            if (depth === 1) innerStrings.push({ type: 'str', start: sStart, end: i, raw: str.slice(sStart, i) });
+                            continue;
+                        }
+                        if (str[i] === '<' && str[i + 1] !== '<') {
+                            const hStart = i;
+                            i++;
+                            while (i < len && str[i] !== '>') i++;
+                            if (i < len) i++;
+                            if (depth === 1) innerStrings.push({ type: 'hex', start: hStart, end: i, raw: str.slice(hStart, i) });
+                            continue;
+                        }
+                        if (str[i] === '[') depth++;
+                        else if (str[i] === ']') depth--;
+                        i++;
+                    }
+                    tokens.push({ type: 'array', start, end: i, innerStrings });
+                    continue;
+                }
+                if (ch === '/') {
+                    const start = i;
+                    i++;
+                    while (i < len && !isDelim(str[i])) i++;
+                    tokens.push({ type: 'name', start, end: i, value: str.slice(start, i) });
+                    continue;
+                }
+                const start = i;
+                while (i < len && !isDelim(str[i])) i++;
+                const word = str.slice(start, i);
+                const num = Number(word);
+                if (!Number.isNaN(num) && word !== '') {
+                    tokens.push({ type: 'num', start, end: i, value: num });
+                } else {
+                    tokens.push({ type: 'op', start, end: i, value: word });
+                }
+            }
+            return tokens;
+        }
+
+        // 透過文字矩陣座標 (pdfX, pdfY) 直接從原生 PDF 向量內容串流移除舊文字指令（零白色方塊遮罩）
+        function removeTextOperatorsFromPdfPage(pdfDoc, pdfPage, regions) {
+            const matchedRegionIds = new Set();
+            const targetRegions = (regions || []).filter(r => typeof r.pdfX === 'number' && typeof r.pdfY === 'number');
+            if (!targetRegions.length || typeof PDFLib.decodePDFRawStream !== 'function') return matchedRegionIds;
+
+            const contents = pdfPage.node.Contents();
+            if (!contents) return matchedRegionIds;
+
+            const streamRefs = [];
+            if (contents instanceof PDFLib.PDFArray) {
+                for (let i = 0; i < contents.size(); i++) streamRefs.push(contents.get(i));
+            } else {
+                streamRefs.push(contents);
+            }
+
+            for (const ref of streamRefs) {
+                const streamObj = pdfDoc.context.lookup(ref);
+                if (!streamObj || typeof streamObj.getContents !== 'function') continue;
+
+                try {
+                    const decodedBytes = PDFLib.decodePDFRawStream(streamObj).decode();
+                    let streamText = '';
+                    for (let i = 0; i < decodedBytes.length; i++) streamText += String.fromCharCode(decodedBytes[i]);
+
+                    const tokens = tokenizePdfContentStream(streamText);
+                    const replacements = [];
+
+                    let ctm = [1, 0, 0, 1, 0, 0];
+                    const ctmStack = [];
+                    let tm = [1, 0, 0, 1, 0, 0];
+                    let tlm = [1, 0, 0, 1, 0, 0];
+                    let leading = 0;
+                    const operands = [];
+
+                    for (let t = 0; t < tokens.length; t++) {
+                        const tok = tokens[t];
+                        if (tok.type !== 'op') {
+                            operands.push(tok);
+                            continue;
+                        }
+
+                        const op = tok.value;
+                        if (op === 'q') {
+                            ctmStack.push([...ctm]);
+                        } else if (op === 'Q') {
+                            if (ctmStack.length) ctm = ctmStack.pop();
+                        } else if (op === 'cm' && operands.length >= 6) {
+                            const m = operands.slice(-6).map(o => o.value || 0);
+                            ctm = multiplyPdfMatrix(m, ctm);
+                        } else if (op === 'BT') {
+                            tm = [1, 0, 0, 1, 0, 0];
+                            tlm = [1, 0, 0, 1, 0, 0];
+                        } else if (op === 'ET') {
+                            tm = [1, 0, 0, 1, 0, 0];
+                            tlm = [1, 0, 0, 1, 0, 0];
+                        } else if (op === 'Tm' && operands.length >= 6) {
+                            const m = operands.slice(-6).map(o => o.value || 0);
+                            tm = [...m];
+                            tlm = [...m];
+                        } else if (op === 'Td' && operands.length >= 2) {
+                            const tx = operands[operands.length - 2].value || 0;
+                            const ty = operands[operands.length - 1].value || 0;
+                            tlm = multiplyPdfMatrix([1, 0, 0, 1, tx, ty], tlm);
+                            tm = [...tlm];
+                        } else if (op === 'TD' && operands.length >= 2) {
+                            const tx = operands[operands.length - 2].value || 0;
+                            const ty = operands[operands.length - 1].value || 0;
+                            leading = -ty;
+                            tlm = multiplyPdfMatrix([1, 0, 0, 1, tx, ty], tlm);
+                            tm = [...tlm];
+                        } else if (op === 'T*') {
+                            tlm = multiplyPdfMatrix([1, 0, 0, 1, 0, -leading], tlm);
+                            tm = [...tlm];
+                        } else if (op === 'TL' && operands.length >= 1) {
+                            leading = operands[operands.length - 1].value || 0;
+                        } else if ((op === 'Tj' || op === 'TJ' || op === "'" || op === '"') && operands.length >= 1) {
+                            if (op === "'" || op === '"') {
+                                tlm = multiplyPdfMatrix([1, 0, 0, 1, 0, -leading], tlm);
+                                tm = [...tlm];
+                            }
+
+                            const finalM = multiplyPdfMatrix(tm, ctm);
+                            const curX = finalM[4];
+                            const curY = finalM[5];
+                            const argTok = operands[operands.length - 1];
+
+                            // 比對位於同一基線座標的被編輯文字區段
+                            const hitRegs = targetRegions.filter(reg => {
+                                const dy = Math.abs(curY - reg.pdfY);
+                                if (dy > 2.8) return false;
+                                const dx = reg.pdfX - curX;
+                                return dx >= -3.5 && dx <= Math.max(12, (reg.w || 60) + 24);
+                            });
+
+                            if (hitRegs.length > 0) {
+                                hitRegs.forEach(r => matchedRegionIds.add(r.id));
+
+                                if (op === 'Tj' && (argTok.type === 'str' || argTok.type === 'hex')) {
+                                    replacements.push({ start: argTok.start, end: argTok.end, text: '()' });
+                                } else if (op === 'TJ' && argTok.type === 'array') {
+                                    // 若單一 TJ 陣列包含多個片段且僅部分被修改，嘗試精準清空對應文字片段，否則清空整個陣列
+                                    const inner = argTok.innerStrings || [];
+                                    if (inner.length > 1 && hitRegs.length === 1 && hitRegs[0].origStr) {
+                                        const cleanTarget = hitRegs[0].origStr.trim();
+                                        const escapedLit = cleanTarget.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+                                        const matchedInner = inner.filter(s => s.raw === `(${escapedLit})`);
+                                        if (matchedInner.length === 1) {
+                                            replacements.push({ start: matchedInner[0].start, end: matchedInner[0].end, text: '()' });
+                                        } else {
+                                            replacements.push({ start: argTok.start, end: argTok.end, text: '[]' });
+                                        }
+                                    } else {
+                                        replacements.push({ start: argTok.start, end: argTok.end, text: '[]' });
+                                    }
+                                } else if (op === "'" && (argTok.type === 'str' || argTok.type === 'hex')) {
+                                    replacements.push({ start: argTok.start, end: tok.end, text: 'T* () Tj' });
+                                } else if (op === '"' && operands.length >= 3) {
+                                    const awTok = operands[operands.length - 3];
+                                    const acTok = operands[operands.length - 2];
+                                    replacements.push({
+                                        start: awTok.start,
+                                        end: tok.end,
+                                        text: `${awTok.value} Tw ${acTok.value} Tc T* () Tj`
+                                    });
+                                }
                             }
                         }
-                        ctx.restore();
-                    } else if (el.type === 'text') {
-                        ctx.save();
-                        const fs = el.fontSize * scale;
-                        ctx.font = `${el.italic ? 'italic ' : ''}${el.bold ? 'bold ' : ''}${fs}px ${el.fontFamily}`;
-                        ctx.textBaseline = 'top';
-                        const lines = (el.text || '').split('\n');
-                        if (el.bgFill) {
-                            ctx.fillStyle = '#ffffff';
-                            ctx.fillRect(el.x * scale, el.y * scale, el.w * scale, Math.max(el.h * scale, lines.length * fs * 1.3));
+
+                        operands.length = 0;
+                    }
+
+                    if (replacements.length > 0) {
+                        replacements.sort((a, b) => b.start - a.start);
+                        let updatedText = streamText;
+                        for (const rep of replacements) {
+                            updatedText = updatedText.slice(0, rep.start) + rep.text + updatedText.slice(rep.end);
                         }
-                        ctx.fillStyle = el.color;
-                        lines.forEach((line, lIdx) => {
-                            ctx.fillText(line, (el.x + 4) * scale, (el.y + 3) * scale + lIdx * fs * 1.3);
-                        });
-                        ctx.restore();
-                    } else if (el.type === 'image' || el.type === 'signature' || el.type === 'stamp') {
-                        const ovImg = await loadImageAsync(el.dataUrl);
-                        ctx.drawImage(ovImg, el.x * scale, el.y * scale, el.w * scale, el.h * scale);
-                    } else if (el.type === 'note') {
-                        ctx.save();
-                        ctx.fillStyle = '#FEF08A';
-                        ctx.strokeStyle = '#F59E0B';
-                        ctx.lineWidth = 2 * scale;
-                        ctx.fillRect(el.x * scale, el.y * scale, el.w * scale, el.h * scale);
-                        ctx.strokeRect(el.x * scale, el.y * scale, el.w * scale, el.h * scale);
-                        ctx.fillStyle = '#78350F';
-                        ctx.font = `bold ${11 * scale}px 'Noto Sans TC', sans-serif`;
-                        ctx.fillText('📌 備註', (el.x + 8) * scale, (el.y + 16) * scale);
-                        ctx.font = `${12 * scale}px 'Noto Sans TC', sans-serif`;
-                        ctx.fillText((el.text || '').slice(0, 40), (el.x + 8) * scale, (el.y + 36) * scale);
-                        ctx.restore();
+                        const outArr = new Uint8Array(updatedText.length);
+                        for (let i = 0; i < updatedText.length; i++) outArr[i] = updatedText.charCodeAt(i) & 0xff;
+                        const newStream = pdfDoc.context.flateStream(outArr);
+                        if (contents instanceof PDFLib.PDFArray) {
+                            const idx = contents.indexOf(ref);
+                            if (idx !== -1) contents.set(idx, pdfDoc.context.register(newStream));
+                        } else {
+                            pdfPage.node.set(PDFLib.PDFName.of('Contents'), pdfDoc.context.register(newStream));
+                        }
+                    }
+                } catch (e) {
+                    // 若為特殊加密或未支援濾鏡串流則安全回退
+                }
+            }
+
+            return matchedRegionIds;
+        }
+
+        async function buildCompositedPdfBytes() {
+            const outPdf = await PDFDocument.create();
+            const stdFontsCache = {};
+            const getStdFont = async (fontFamily, bold, italic) => {
+                let key = PDFLib.StandardFonts.Helvetica;
+                if (fontFamily && fontFamily.includes('Courier')) {
+                    if (bold && italic) key = PDFLib.StandardFonts.CourierBoldOblique;
+                    else if (bold) key = PDFLib.StandardFonts.CourierBold;
+                    else if (italic) key = PDFLib.StandardFonts.CourierOblique;
+                    else key = PDFLib.StandardFonts.Courier;
+                } else if (fontFamily && (fontFamily.includes('Georgia') || fontFamily.includes('Times'))) {
+                    if (bold && italic) key = PDFLib.StandardFonts.TimesRomanBoldItalic;
+                    else if (bold) key = PDFLib.StandardFonts.TimesRomanBold;
+                    else if (italic) key = PDFLib.StandardFonts.TimesRomanItalic;
+                    else key = PDFLib.StandardFonts.TimesRoman;
+                } else {
+                    if (bold && italic) key = PDFLib.StandardFonts.HelveticaBoldOblique;
+                    else if (bold) key = PDFLib.StandardFonts.HelveticaBold;
+                    else if (italic) key = PDFLib.StandardFonts.HelveticaOblique;
+                    else key = PDFLib.StandardFonts.Helvetica;
+                }
+                if (!stdFontsCache[key]) stdFontsCache[key] = await outPdf.embedFont(key);
+                return stdFontsCache[key];
+            };
+
+            const loadedSrcDocs = new Map();
+
+            for (const page of editorState.pages) {
+                let pdfPage;
+                const canUseVectorSource = page.sourcePdfBytes && page.sourcePageIndex >= 0 && !page.pageRotatedInEditor && !(page.origPdfRotation % 360);
+
+                if (canUseVectorSource) {
+                    let srcDoc = loadedSrcDocs.get(page.sourcePdfBytes);
+                    if (!srcDoc) {
+                        srcDoc = await PDFDocument.load(page.sourcePdfBytes);
+                        loadedSrcDocs.set(page.sourcePdfBytes, srcDoc);
+                    }
+                    const [copied] = await outPdf.copyPages(srcDoc, [page.sourcePageIndex]);
+                    outPdf.addPage(copied);
+                    pdfPage = copied;
+                } else if (page.sourcePdfBytes) {
+                    // 若頁面有旋轉，使用已無損去墨的高解析底圖作為基底
+                    const jpgUrl = page.bgCanvas ? page.bgCanvas.toDataURL('image/jpeg', 0.94) : page.bgDataUrl;
+                    const jpgBytes = await fetch(jpgUrl).then(r => r.arrayBuffer());
+                    const embeddedJpg = await outPdf.embedJpg(jpgBytes);
+                    pdfPage = outPdf.addPage([page.width, page.height]);
+                    pdfPage.drawImage(embeddedJpg, { x: 0, y: 0, width: page.width, height: page.height });
+                } else {
+                    pdfPage = outPdf.addPage([page.width, page.height]);
+                }
+
+                const mediaBox = pdfPage.getMediaBox ? pdfPage.getMediaBox() : { x: 0, y: 0 };
+                const mbX = mediaBox.x || 0;
+                const mbY = mediaBox.y || 0;
+
+                // 若為原生向量 PDF 頁面：優先直接從內容串流移除舊字指令（無任何方塊遮罩）；僅對無法解析的外部 XObject 才使用極細筆劃高度補底
+                if (canUseVectorSource && page.erasedRegions && page.erasedRegions.length > 0) {
+                    const strippedIds = removeTextOperatorsFromPdfPage(outPdf, pdfPage, page.erasedRegions);
+                    for (const reg of page.erasedRegions) {
+                        if (!strippedIds.has(reg.id)) {
+                            const glyphTop = reg.y + reg.h * 0.14;
+                            const glyphHeight = Math.max(4, reg.h * 0.72);
+                            pdfPage.drawRectangle({
+                                x: mbX + reg.x,
+                                y: mbY + page.height - glyphTop - glyphHeight,
+                                width: reg.w,
+                                height: glyphHeight,
+                                color: parseColorToPdfRgb(reg.bgColor || '#ffffff')
+                            });
+                        }
                     }
                 }
 
-                const jpgUrl = canvas.toDataURL('image/jpeg', 0.92);
-                const jpgBytes = await fetch(jpgUrl).then(r => r.arrayBuffer());
-                const embeddedJpg = await outPdf.embedJpg(jpgBytes);
-                const pdfPage = outPdf.addPage([page.width, page.height]);
-                pdfPage.drawImage(embeddedJpg, { x: 0, y: 0, width: page.width, height: page.height });
+                // 繪製所有標註與直接編輯後的新文本
+                for (const el of page.elements) {
+                    if (el.type === 'path' || el.type === 'highlight') {
+                        const strokeColor = el.type === 'highlight' ? PDFLib.rgb(0.98, 0.8, 0.08) : parseColorToPdfRgb(el.color);
+                        const opacity = el.type === 'highlight' ? 0.45 : 1;
+                        const thickness = el.type === 'highlight' ? Math.max(14, el.strokeWidth * 3) : el.strokeWidth;
+                        for (let i = 1; i < el.points.length; i++) {
+                            pdfPage.drawLine({
+                                start: { x: mbX + el.points[i - 1].x, y: mbY + page.height - el.points[i - 1].y },
+                                end: { x: mbX + el.points[i].x, y: mbY + page.height - el.points[i].y },
+                                thickness,
+                                color: strokeColor,
+                                opacity
+                            });
+                        }
+                    } else if (el.type === 'shape') {
+                        const x1 = mbX + el.x, y1 = mbY + page.height - el.y;
+                        const x2 = mbX + el.x + el.w, y2 = mbY + page.height - (el.y + el.h);
+                        const minX = Math.min(x1, x2), minY = Math.min(y1, y2);
+                        const absW = Math.abs(el.w), absH = Math.abs(el.h);
+                        const col = parseColorToPdfRgb(el.color);
 
-                // 加入真實可點擊超連結 PDF 註解
+                        if (el.shapeType === 'whiteout') {
+                            pdfPage.drawRectangle({ x: minX, y: minY, width: absW, height: absH, color: PDFLib.rgb(1, 1, 1) });
+                        } else if (el.shapeType === 'rect') {
+                            pdfPage.drawRectangle({ x: minX, y: minY, width: absW, height: absH, borderColor: col, borderWidth: el.strokeWidth });
+                        } else if (el.shapeType === 'circle') {
+                            pdfPage.drawEllipse({ x: minX + absW / 2, y: minY + absH / 2, xScale: absW / 2, yScale: absH / 2, borderColor: col, borderWidth: el.strokeWidth });
+                        } else if (el.shapeType === 'line' || el.shapeType === 'arrow') {
+                            pdfPage.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: el.strokeWidth, color: col });
+                            if (el.shapeType === 'arrow') {
+                                const angle = Math.atan2(y2 - y1, x2 - x1);
+                                const headLen = Math.max(12, el.strokeWidth * 3.5);
+                                const p1x = x2 - headLen * Math.cos(angle - Math.PI / 6);
+                                const p1y = y2 - headLen * Math.sin(angle - Math.PI / 6);
+                                const p2x = x2 - headLen * Math.cos(angle + Math.PI / 6);
+                                const p2y = y2 - headLen * Math.sin(angle + Math.PI / 6);
+                                pdfPage.drawSvgPath(`M ${x2} ${y2} L ${p1x} ${p1y} L ${p2x} ${p2y} Z`, { color: col });
+                            }
+                        }
+                    } else if (el.type === 'text') {
+                        if (!el.text || !el.text.trim()) continue;
+                        const isWinAnsi = /^[\x09\x0A\x0D\x20-\x7E\xA0-\xFF]*$/.test(el.text);
+                        if (isWinAnsi) {
+                            const font = await getStdFont(el.fontFamily, el.bold, el.italic);
+                            const lines = el.text.split('\n');
+                            const lineH = el.fontSize * 1.15;
+                            if (el.bgFill) {
+                                pdfPage.drawRectangle({
+                                    x: mbX + el.x,
+                                    y: mbY + page.height - el.y - lines.length * lineH,
+                                    width: Math.max(el.w, 16),
+                                    height: lines.length * lineH,
+                                    color: parseColorToPdfRgb(el.bgColor || '#ffffff')
+                                });
+                            }
+                            lines.forEach((line, lIdx) => {
+                                const baselineY = mbY + page.height - (el.y + el.fontSize * 0.89 + lIdx * lineH);
+                                pdfPage.drawText(line, {
+                                    x: mbX + el.x,
+                                    y: baselineY,
+                                    size: el.fontSize,
+                                    font,
+                                    color: parseColorToPdfRgb(el.color)
+                                });
+                            });
+                        } else {
+                            // 含中文字元時以 4 倍超高解析度透明圖層精準嵌入原生向量頁
+                            const { pngBytes, widthPt, heightPt } = await renderUnicodeTextToPng(el, 4);
+                            const embeddedPng = await outPdf.embedPng(pngBytes);
+                            pdfPage.drawImage(embeddedPng, {
+                                x: mbX + el.x,
+                                y: mbY + page.height - el.y - heightPt,
+                                width: widthPt,
+                                height: heightPt
+                            });
+                        }
+                    } else if (el.type === 'image' || el.type === 'signature' || el.type === 'stamp') {
+                        const imgBytes = await fetch(el.dataUrl).then(r => r.arrayBuffer());
+                        const embeddedImg = el.dataUrl.startsWith('data:image/jpeg')
+                            ? await outPdf.embedJpg(imgBytes)
+                            : await outPdf.embedPng(imgBytes);
+                        pdfPage.drawImage(embeddedImg, {
+                            x: mbX + el.x,
+                            y: mbY + page.height - el.y - el.h,
+                            width: el.w,
+                            height: el.h
+                        });
+                    } else if (el.type === 'note') {
+                        pdfPage.drawRectangle({
+                            x: mbX + el.x,
+                            y: mbY + page.height - el.y - el.h,
+                            width: el.w,
+                            height: el.h,
+                            color: PDFLib.rgb(0.996, 0.94, 0.54),
+                            borderColor: PDFLib.rgb(0.96, 0.62, 0.04),
+                            borderWidth: 1.5
+                        });
+                        const noteFont = await getStdFont('Helvetica', false, false);
+                        const safeNote = (el.text || '').replace(/[^\x20-\x7E]/g, '?').slice(0, 40);
+                        pdfPage.drawText(safeNote, {
+                            x: mbX + el.x + 8,
+                            y: mbY + page.height - el.y - 24,
+                            size: 11,
+                            font: noteFont,
+                            color: PDFLib.rgb(0.47, 0.21, 0.06)
+                        });
+                    }
+                }
+
                 page.elements.filter(el => el.type === 'link' && el.url).forEach(el => {
                     const uri = el.url.startsWith('http') ? el.url : 'https://' + el.url;
                     const linkAnnot = outPdf.context.obj({
                         Type: 'Annot',
                         Subtype: 'Link',
-                        Rect: [el.x, page.height - el.y - el.h, el.x + el.w, page.height - el.y],
+                        Rect: [mbX + el.x, mbY + page.height - el.y - el.h, mbX + el.x + el.w, mbY + page.height - el.y],
                         Border: [0, 0, 1],
                         C: [0.15, 0.39, 0.92],
                         A: { Type: 'Action', S: 'URI', URI: PDFLib.PDFString.of(uri) }
@@ -2448,74 +4239,8 @@
         }
 
         // =========================================================================
-        // 4. 其他 19 項 PDF 與格式轉換工具執行核心
+        // 4. 其他工具與合併執行核心
         // =========================================================================
-        function toggleSplitMode() {
-            const mode = document.querySelector('input[name="split_mode"]:checked').value;
-            const labelRange = document.getElementById('label-range');
-            const labelAll = document.getElementById('label-all');
-            const rangeInputs = document.getElementById('range-inputs');
-            if (mode === 'range') {
-                labelRange.classList.add('border-black', 'bg-gray-50');
-                labelAll.classList.remove('border-black', 'bg-gray-50');
-                rangeInputs.style.opacity = '1';
-                document.getElementById('start-page').disabled = false;
-                document.getElementById('end-page').disabled = false;
-            } else {
-                labelAll.classList.add('border-black', 'bg-gray-50');
-                labelRange.classList.remove('border-black', 'bg-gray-50');
-                rangeInputs.style.opacity = '0.5';
-                document.getElementById('start-page').disabled = true;
-                document.getElementById('end-page').disabled = true;
-            }
-        }
-
-        async function updateCropPreview() {
-            if (!currentFileBytes) return;
-            try {
-                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(currentFileBytes) }).promise;
-                const page = await pdf.getPage(1);
-                const vp = page.getViewport({ scale: 0.6 });
-                const canvas = document.getElementById('crop-preview-canvas');
-                canvas.width = vp.width;
-                canvas.height = vp.height;
-                const ctx = canvas.getContext('2d');
-                await page.render({ canvasContext: ctx, viewport: vp }).promise;
-
-                const top = (Number(document.getElementById('crop-top').value) || 0) / 100;
-                const bottom = (Number(document.getElementById('crop-bottom').value) || 0) / 100;
-                const left = (Number(document.getElementById('crop-left').value) || 0) / 100;
-                const right = (Number(document.getElementById('crop-right').value) || 0) / 100;
-
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height * top);
-                ctx.fillRect(0, canvas.height * (1 - bottom), canvas.width, canvas.height * bottom);
-                ctx.fillRect(0, canvas.height * top, canvas.width * left, canvas.height * (1 - top - bottom));
-                ctx.fillRect(canvas.width * (1 - right), canvas.height * top, canvas.width * right, canvas.height * (1 - top - bottom));
-
-                ctx.strokeStyle = '#10B981';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(
-                    canvas.width * left,
-                    canvas.height * top,
-                    canvas.width * Math.max(0.05, 1 - left - right),
-                    canvas.height * Math.max(0.05, 1 - top - bottom)
-                );
-            } catch (e) { console.error(e); }
-        }
-
-        function copyOcrText() {
-            const ta = document.getElementById('ocr-output-text');
-            ta.select();
-            document.execCommand('copy');
-        }
-
-        function downloadOcrTxt() {
-            const text = document.getElementById('ocr-output-text').value;
-            const cleanName = currentFile ? currentFile.name.replace(/\.[^/.]+$/, '') : 'ocr_result';
-            triggerDownload(new Blob([text], { type: 'text/plain;charset=utf-8' }), `${cleanName}_ocr.txt`, 'text/plain');
-        }
-
         async function processTask() {
             hideError();
             const btn = document.getElementById('execute-btn');
@@ -2535,41 +4260,91 @@
                 const cleanName = currentFile ? currentFile.name.replace(/\.[^/.]+$/, '') : 'document';
 
                 if (currentTool === 'split') {
-                    const mode = document.querySelector('input[name="split_mode"]:checked').value;
-                    const pdfDoc = await PDFDocument.load(currentFileBytes);
-                    if (mode === 'range') {
-                        const start = parseInt(document.getElementById('start-page').value);
-                        const end = parseInt(document.getElementById('end-page').value);
-                        if (isNaN(start) || isNaN(end) || start < 1 || end > totalPagesCount || start > end) {
-                            throw new Error(t('err_invalid_range').replace('{n}', totalPagesCount));
+                    const selectedItems = splitPageItems.filter(p => p.selected);
+                    if (!selectedItems.length) {
+                        throw new Error(t('err_no_split_pages'));
+                    }
+                    const outMode = document.querySelector('input[name="split_output_mode"]:checked').value;
+                    const baseFileName = splitFileItems[0] ? splitFileItems[0].name.replace(/\.[^/.]+$/, '') : 'split';
+                    const loadedDocsCache = {};
+
+                    const getLoadedDoc = async (fileId) => {
+                        if (!loadedDocsCache[fileId]) {
+                            const fItem = splitFileItems.find(f => f.id === fileId);
+                            if (!fItem) return null;
+                            loadedDocsCache[fileId] = await PDFDocument.load(fItem.bytes);
                         }
+                        return loadedDocsCache[fileId];
+                    };
+
+                    if (outMode === 'single') {
                         const newPdf = await PDFDocument.create();
-                        const indices = Array.from({ length: end - start + 1 }, (_, i) => start - 1 + i);
-                        const copied = await newPdf.copyPages(pdfDoc, indices);
-                        copied.forEach(p => newPdf.addPage(p));
+                        for (const pItem of selectedItems) {
+                            const srcPdf = await getLoadedDoc(pItem.fileId);
+                            if (!srcPdf) continue;
+                            const [copiedPage] = await newPdf.copyPages(srcPdf, [pItem.filePageIndex]);
+                            if (pItem.rotation) {
+                                copiedPage.setRotation(PDFLib.degrees(copiedPage.getRotation().angle + pItem.rotation));
+                            }
+                            newPdf.addPage(copiedPage);
+                        }
                         outBytes = await newPdf.save();
-                        outName = `${cleanName}_${start}-${end}.pdf`;
+                        outName = `${baseFileName}_extracted_${selectedItems.length}p.pdf`;
                     } else {
                         const zip = new JSZip();
-                        for (let i = 0; i < totalPagesCount; i++) {
-                            const newPdf = await PDFDocument.create();
-                            const [page] = await newPdf.copyPages(pdfDoc, [i]);
-                            newPdf.addPage(page);
-                            zip.file(`${cleanName}_${i + 1}.pdf`, await newPdf.save());
+                        for (let i = 0; i < selectedItems.length; i++) {
+                            const pItem = selectedItems[i];
+                            const srcPdf = await getLoadedDoc(pItem.fileId);
+                            if (!srcPdf) continue;
+                            const singlePdf = await PDFDocument.create();
+                            const [copiedPage] = await singlePdf.copyPages(srcPdf, [pItem.filePageIndex]);
+                            if (pItem.rotation) {
+                                copiedPage.setRotation(PDFLib.degrees(copiedPage.getRotation().angle + pItem.rotation));
+                            }
+                            singlePdf.addPage(copiedPage);
+                            const itemCleanName = pItem.fileName.replace(/\.[^/.]+$/, '');
+                            zip.file(`${String(i + 1).padStart(2, '0')}_${itemCleanName}_p${pItem.filePageIndex + 1}.pdf`, await singlePdf.save());
                         }
                         outBytes = await zip.generateAsync({ type: 'blob' });
-                        outName = `${cleanName}_split.zip`;
+                        outName = `${baseFileName}_split.zip`;
                         outType = 'application/zip';
                     }
                 }
                 else if (currentTool === 'merge') {
-                    const mergedPdf = await PDFDocument.create();
-                    for (const file of multiFiles) {
-                        const buf = await file.arrayBuffer();
-                        const pdf = await PDFDocument.load(buf);
-                        const copied = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-                        copied.forEach(p => mergedPdf.addPage(p));
+                    const activeCount = mergeOrderMode === 'file' ? mergeFileItems.length : mergePageItems.length;
+                    if (activeCount < 2) {
+                        throw new Error(t('err_need_2_files'));
                     }
+                    const mergedPdf = await PDFDocument.create();
+
+                    if (mergeOrderMode === 'file') {
+                        for (const fItem of mergeFileItems) {
+                            const srcPdf = await PDFDocument.load(fItem.bytes);
+                            const copied = await mergedPdf.copyPages(srcPdf, srcPdf.getPageIndices());
+                            copied.forEach(p => {
+                                if (fItem.rotation) {
+                                    p.setRotation(PDFLib.degrees(p.getRotation().angle + fItem.rotation));
+                                }
+                                mergedPdf.addPage(p);
+                            });
+                        }
+                    } else {
+                        const loadedDocsCache = {};
+                        for (const pItem of mergePageItems) {
+                            if (!loadedDocsCache[pItem.fileId]) {
+                                const fItem = mergeFileItems.find(f => f.id === pItem.fileId);
+                                if (!fItem) continue;
+                                loadedDocsCache[pItem.fileId] = await PDFDocument.load(fItem.bytes);
+                            }
+                            const srcPdf = loadedDocsCache[pItem.fileId];
+                            const [copiedPage] = await mergedPdf.copyPages(srcPdf, [pItem.pageIndex]);
+                            if (pItem.rotation) {
+                                copiedPage.setRotation(PDFLib.degrees(copiedPage.getRotation().angle + pItem.rotation));
+                            }
+                            mergedPdf.addPage(copiedPage);
+                        }
+                    }
+
                     outBytes = await mergedPdf.save();
                     outName = `merged_${Date.now()}.pdf`;
                 }
@@ -2598,25 +4373,6 @@
                     });
                     outBytes = await pdfDoc.save();
                     outName = `${cleanName}_deleted.pdf`;
-                }
-                else if (currentTool === 'crop') {
-                    const pdfDoc = await PDFDocument.load(currentFileBytes);
-                    const top = (Number(document.getElementById('crop-top').value) || 0) / 100;
-                    const bottom = (Number(document.getElementById('crop-bottom').value) || 0) / 100;
-                    const left = (Number(document.getElementById('crop-left').value) || 0) / 100;
-                    const right = (Number(document.getElementById('crop-right').value) || 0) / 100;
-
-                    pdfDoc.getPages().forEach(page => {
-                        const { width, height } = page.getSize();
-                        const newX = width * left;
-                        const newY = height * bottom;
-                        const newW = Math.max(20, width * (1 - left - right));
-                        const newH = Math.max(20, height * (1 - top - bottom));
-                        page.setCropBox(newX, newY, newW, newH);
-                        page.setMediaBox(newX, newY, newW, newH);
-                    });
-                    outBytes = await pdfDoc.save();
-                    outName = `${cleanName}_cropped.pdf`;
                 }
                 else if (currentTool === 'watermark') {
                     const pdfDoc = await PDFDocument.load(currentFileBytes);
@@ -2768,43 +4524,6 @@
                         outType = 'application/zip';
                     }
                 }
-                else if (currentTool === 'ocr') {
-                    const lang = document.getElementById('ocr-lang-select').value;
-                    const progBox = document.getElementById('ocr-progress-box');
-                    const statusText = document.getElementById('ocr-status-text');
-                    const pctText = document.getElementById('ocr-pct-text');
-                    const progBar = document.getElementById('ocr-progress-bar');
-                    progBox.classList.remove('hidden');
-
-                    const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(currentFileBytes) }).promise;
-                    let fullText = '';
-
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        statusText.textContent = `正在辨識第 ${i} / ${pdf.numPages} 頁...`;
-                        const page = await pdf.getPage(i);
-                        const vp = page.getViewport({ scale: 2.0 });
-                        const canvas = document.createElement('canvas');
-                        canvas.width = vp.width; canvas.height = vp.height;
-                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-
-                        const result = await Tesseract.recognize(canvas, lang, {
-                            logger: m => {
-                                if (m.status === 'recognizing text') {
-                                    const pct = Math.round(((i - 1 + m.progress) / pdf.numPages) * 100);
-                                    pctText.textContent = pct + '%';
-                                    progBar.style.width = pct + '%';
-                                }
-                            }
-                        });
-                        fullText += `--- 第 ${i} 頁 ---\n${result.data.text}\n\n`;
-                    }
-
-                    statusText.textContent = 'OCR 文字辨識完成！';
-                    pctText.textContent = '100%';
-                    progBar.style.width = '100%';
-                    document.getElementById('ocr-output-text').value = fullText.trim();
-                    document.getElementById('ocr-result-box').classList.remove('hidden');
-                }
 
                 if (outBytes) triggerDownload(outBytes, outName, outType);
 
@@ -2814,7 +4533,7 @@
 
                 setTimeout(() => {
                     resetButton();
-                    if (currentTool !== 'ocr') resetApp();
+                    if (currentTool !== 'merge' && currentTool !== 'split') resetApp();
                 }, 2200);
 
             } catch (e) {
@@ -2861,18 +4580,23 @@
             currentFileBytes = null;
             multiFiles = [];
             totalPagesCount = 0;
+            mergeFileItems = [];
+            mergePageItems = [];
+            mergeOrderMode = 'file';
+            splitFileItems = [];
+            splitPageItems = [];
+            lastSplitClickedIndex = null;
             fileUploadInput.value = '';
 
             document.getElementById('editor-zone').classList.add('hidden');
-            document.getElementById('processing-zone').classList.add('hidden');
+            const procZone = document.getElementById('processing-zone');
+            procZone.classList.add('hidden');
+            procZone.classList.remove('max-w-4xl');
+            procZone.classList.add('max-w-2xl');
+
             document.getElementById('hero-section').classList.remove('hidden');
             document.getElementById('drop-zone-container').classList.remove('hidden');
             document.getElementById('footer-features').classList.remove('hidden');
-
-            const ocrProg = document.getElementById('ocr-progress-box');
-            const ocrRes = document.getElementById('ocr-result-box');
-            if (ocrProg) ocrProg.classList.add('hidden');
-            if (ocrRes) ocrRes.classList.add('hidden');
 
             if (clearError) hideError();
             const delInput = document.getElementById('delete-pages-input');
