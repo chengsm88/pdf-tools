@@ -209,7 +209,7 @@
 <div id="np-open" class="np-card np-intro">
 <h1 id="np-title">精準編輯 PDF</h1><p id="np-desc">直接選取 PDF 原生文字，修改、刪除或加入可搜尋文字，保留其他頁面內容。</p>
 <div class="np-upload"><label for="np-file">選擇 PDF 檔案（最多 100 MB）</label><input id="np-file" class="np-file" type="file" accept=".pdf,application/pdf"></div>
-<button id="np-open-btn" class="np-primary" type="button" onclick="nativeOpen()">開啟 PDF</button><p class="np-help">PDF 檔案在瀏覽器本機處理，不會上傳。需連網載入 PDF 函式庫；不必安裝任何程式。掃描文件需先 OCR。修改或解鎖可能使原有數位簽章失效。</p></div>
+<button id="np-open-btn" class="np-primary" type="button" onclick="nativeOpen()">開啟 PDF</button></div>
 <div id="np-status" role="status" class="np-status" aria-live="polite"></div>
 <div id="np-work" hidden>
 <div class="np-bar"><strong id="np-name"></strong><button id="np-prev" onclick="nativePage(-1)">上一頁</button><span id="np-count"></span><button id="np-next" onclick="nativePage(1)">下一頁</button><button onclick="nativeZoom(-.2)">−</button><span id="np-zoom">100%</span><button onclick="nativeZoom(.2)">＋</button><button id="np-undo" onclick="nativeHistory('undo')">復原</button><button id="np-redo" onclick="nativeHistory('redo')">重做</button><button id="np-add" onclick="nativeAdd()">＋新增文字</button><input id="np-search" class="np-search" placeholder="搜尋本頁文字" oninput="nativeDraw()"><button id="np-save" class="np-primary" onclick="nativeDownload()">下載 PDF</button><button onclick="nativeShow('edit')">關閉</button></div>
