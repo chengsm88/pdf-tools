@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF 工具 & 編輯器 | 本機安全處理</title>
+    <title>PDF Pro | 精準編輯與解鎖</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 Google Fonts -->
@@ -87,7 +87,9 @@
             transform: translateY(-2px);
         }
     </style>
-</head>
+<style>
+.hidden{display:none!important}.native-tab{border:1px solid #d1d5db;background:white;border-radius:24px;padding:8px 14px;font-weight:650;cursor:pointer;color:#222}.native-tab.on{background:#111;color:white;border-color:#111}.native-root{font:14px 'Noto Sans TC',Arial,sans-serif;color:#1f2937;width:100%;max-width:1440px;margin:20px auto 50px;padding:0 16px;box-sizing:border-box}.native-root[hidden],.native-root [hidden]{display:none!important}.np-card{background:white;border:1px solid #dce1e6;border-radius:20px;padding:24px;box-shadow:0 6px 24px #1720330b}.np-intro{max-width:680px;margin:30px auto;text-align:center}.np-intro h1{font-size:32px;font-weight:750;margin:0 0 10px}.np-intro p{color:#64748b;line-height:1.7}.np-upload{display:grid;gap:12px;text-align:left;margin:24px 0}.native-root input,.native-root textarea{border:1px solid #d1d5db;border-radius:9px;padding:9px;background:white;color:#111;max-width:100%;box-sizing:border-box}.native-root button:not(.np-hit){border:1px solid #d1d5db;background:white;padding:8px 13px;border-radius:9px;cursor:pointer;font-weight:600}.native-root button.np-primary{background:#111827;color:white;border-color:#111827}.native-root button:disabled{opacity:.4;cursor:not-allowed}.np-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px;background:white;border:1px solid #dce1e6;border-radius:12px;margin-bottom:12px}.np-bar strong{margin-right:auto;overflow-wrap:anywhere}.np-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px}.np-scroll{background:#e9edf2;min-height:500px;height:72vh;overflow:auto;padding:28px;box-sizing:border-box;border-radius:12px}.np-paper{position:relative;margin:auto;background:white;box-shadow:0 3px 12px #0003;flex:none}.np-paper img{width:100%;height:100%;display:block;pointer-events:none}.np-hit{position:absolute;border:1px solid transparent;background:transparent;cursor:text;padding:0;box-sizing:border-box;min-width:2px;min-height:2px}.np-hit:hover,.np-hit:focus,.np-hit.selected{border-color:#2563eb;background:#2563eb19;outline:0}.np-side{align-self:start;padding:18px}.np-side h3{font-weight:700;font-size:17px;margin:0 0 12px}.np-side label{display:block;font-weight:600;margin:12px 0 5px}.np-side input:not([type=checkbox]),.np-side textarea{width:100%}.np-side textarea{min-height:90px;resize:vertical}.np-side p,.np-help{color:#64748b;font-size:12px;line-height:1.65}.np-status{margin:12px 0;color:#334155;white-space:pre-wrap;overflow-wrap:anywhere}.np-status.err{color:#b91c1c}.np-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.np-add{cursor:crosshair}.np-file{max-width:100%;overflow:hidden}.np-small{font-size:12px;color:#64748b}.np-search{width:150px}@media(max-width:760px){.np-layout{grid-template-columns:1fr}.np-scroll{height:54vh;min-height:300px}.np-intro h1{font-size:25px}}
+</style></head>
 <body class="min-h-screen flex flex-col relative">
 
     <!-- 語系切換器 -->
@@ -111,10 +113,12 @@
 
             <div class="hidden sm:block h-5 w-px bg-gray-200 mx-1"></div>
 
+            <button id="native-edit-tab" type="button" class="native-tab" onclick="nativeShow('edit')">✎ 精準編輯 PDF</button>
+            <button id="native-unlock-tab" type="button" class="native-tab" onclick="nativeShow('unlock')">🔓 解鎖 PDF</button>
             <!-- 常用工具快捷膠囊 -->
             <a href="#" onclick="switchTool('editor'); return false;" class="nav-item active flex items-center gap-1.5 px-3.5 py-1.5 rounded-full transition-all" data-target="editor">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                <span data-i18n="tool_editor">編輯 PDF</span>
+                <span data-i18n="tool_editor">標註編輯 PDF</span>
             </a>
             <a href="#" onclick="switchTool('sign'); return false;" class="nav-item flex items-center gap-1.5 px-3.5 py-1.5 rounded-full hover:bg-gray-200/60 hover:text-black transition-all" data-target="sign">
                 <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732zM3 21h18"></path></svg>
@@ -201,6 +205,16 @@
     <!-- 主要內容區 -->
     <main class="flex-grow flex flex-col items-center w-full">
         
+<section id="native-root" class="native-root" hidden>
+<div id="np-open" class="np-card np-intro">
+<h1 id="np-title">精準編輯 PDF</h1><p id="np-desc">直接選取 PDF 原生文字，修改、刪除或加入可搜尋文字，保留其他頁面內容。</p>
+<div class="np-upload"><label for="np-file">選擇 PDF 檔案（最多 100 MB）</label><input id="np-file" class="np-file" type="file" accept=".pdf,application/pdf"></div>
+<button id="np-open-btn" class="np-primary" type="button" onclick="nativeOpen()">開啟 PDF</button><p class="np-help">PDF 檔案在瀏覽器本機處理，不會上傳。需連網載入 PDF 函式庫；不必安裝任何程式。掃描文件需先 OCR。修改或解鎖可能使原有數位簽章失效。</p></div>
+<div id="np-status" role="status" class="np-status" aria-live="polite"></div>
+<div id="np-work" hidden>
+<div class="np-bar"><strong id="np-name"></strong><button id="np-prev" onclick="nativePage(-1)">上一頁</button><span id="np-count"></span><button id="np-next" onclick="nativePage(1)">下一頁</button><button onclick="nativeZoom(-.2)">−</button><span id="np-zoom">100%</span><button onclick="nativeZoom(.2)">＋</button><button id="np-undo" onclick="nativeHistory('undo')">復原</button><button id="np-redo" onclick="nativeHistory('redo')">重做</button><button id="np-add" onclick="nativeAdd()">＋新增文字</button><input id="np-search" class="np-search" placeholder="搜尋本頁文字" oninput="nativeDraw()"><button id="np-save" class="np-primary" onclick="nativeDownload()">下載 PDF</button><button onclick="nativeShow('edit')">關閉</button></div>
+<div class="np-layout"><div class="np-scroll" id="np-scroll"><div id="np-paper" class="np-paper"></div></div>
+<aside class="np-card np-side"><h3>文字內容</h3><p id="np-selection">請點擊頁面上的文字，藍框會顯示可選取的位置。</p><fieldset id="np-fields" disabled><label for="np-text">修改文字（單行）</label><textarea id="np-text" placeholder="輸入文字；清空即刪除"></textarea><label for="np-size">字體大小（pt）</label><input id="np-size" type="number" min="1" max="300" step="0.1" value="12"><label for="np-color">文字顏色</label><input id="np-color" type="color" value="#000000"><label><input id="np-fit" type="checkbox" checked> 自動縮放至原文字寬度</label><div class="np-actions"><button id="np-apply" class="np-primary" onclick="nativeApply()">套用修改</button><button id="np-delete" onclick="nativeDelete()">刪除原文字</button></div></fieldset><p>原字型會以相近字型替代；支援常用繁體中文字；匯出前會檢查文字內容。文字較長時預設縮小以避免覆蓋鄰近內容。特殊字型、垂直或斜向文字可能無法編輯。</p></aside></div></div></section>
         <!-- 英雄標題區 -->
         <div id="hero-section" class="text-center mt-6 md:mt-8 mb-8 w-full px-4">
             <div class="inline-flex items-center gap-2 bg-[#F9FAFB] border border-gray-200 text-gray-700 text-xs px-4 py-1.5 rounded-full mb-5 font-medium">
@@ -493,7 +507,7 @@
 
             <!-- 操作提示條 -->
             <div id="ed-hint-banner" class="bg-emerald-50/90 border-b border-emerald-100 text-emerald-800 text-xs px-4 py-1.5 text-center font-medium">
-                提示：直接點擊頁面上的任何文字即可原地修改內容（自動保留原背景與底線）；清空文字即可直接刪除，按 Ctrl+Z 可隨時還原。
+                舊版標註模式：文字覆蓋不會真正移除原文字。請使用「精準編輯 PDF」修改原生內容。
             </div>
 
             <!-- 中央 PDF 畫布捲動視窗 -->
@@ -882,7 +896,7 @@
         const translations = {
             'zh-HK': {
                 'nav_all_tools': '全部工具', 'cat_edit_pdf': '編輯 PDF', 'cat_from_pdf': '從 PDF 轉換', 'cat_to_pdf': '轉換為 PDF',
-                'tool_editor': '編輯 PDF', 'tool_sign': '簽署 PDF', 'tool_rotate': '旋轉 PDF', 'tool_merge': '合併 PDF', 'tool_split': '分割 PDF',
+                'tool_editor': '標註編輯 PDF', 'tool_sign': '簽署 PDF', 'tool_rotate': '旋轉 PDF', 'tool_merge': '合併 PDF', 'tool_split': '分割 PDF',
                 'tool_watermark': '加入浮水印', 'tool_addimg': '在 PDF 中加入影像', 'tool_compressimg': '壓縮影像',
                 'tool_compress': '壓縮 PDF', 'tool_delete': '刪除頁面',
                 'tool_pdf2jpg': 'PDF 轉 JPG', 'tool_pdf2png': 'PDF 轉 PNG',
@@ -891,7 +905,7 @@
                 'drop_single': '將檔案拖放至此', 'drop_multi': '將多個檔案拖放至此',
                 'btn_select_pdf': '選擇 PDF 檔案', 'btn_select_pdfs': '選擇多個 PDF 檔案', 'btn_select_imgs': '選擇圖片檔案',
                 'ed_create_blank': '建立空白 PDF', 'ed_download': '下載 PDF', 'ed_add_page': '新增頁面', 'ed_blank_page': '空白頁', 'ed_from_file': '從檔案',
-                'ed_undo': '復原', 'ed_redo': '重作', 'ed_add_text': '新增文字', 'ed_edit_text': '編輯文字', 'ed_signature': '簽名', 'ed_draw': '手繪',
+                'ed_undo': '復原', 'ed_redo': '重作', 'ed_add_text': '新增文字', 'ed_edit_text': '舊版文字覆蓋', 'ed_signature': '簽名', 'ed_draw': '手繪',
                 'ed_line': '直線', 'ed_arrow': '箭頭', 'ed_rect': '矩形框', 'ed_circle': '圓形框', 'ed_whiteout': '白色遮罩',
                 'ed_highlight': '文字螢光標示', 'ed_image': '圖像', 'ed_stamp': '印章', 'ed_link': '連結', 'ed_note': '備註',
                 'ed_manage_pages': '管理頁面', 'ed_print': '列印', 'ed_search': '搜尋', 'ed_stroke': '粗細',
@@ -913,7 +927,7 @@
             },
             'zh-CN': {
                 'nav_all_tools': '全部工具', 'cat_edit_pdf': '编辑 PDF', 'cat_from_pdf': '从 PDF 转换', 'cat_to_pdf': '转换为 PDF',
-                'tool_editor': '编辑 PDF', 'tool_sign': '签署 PDF', 'tool_rotate': '旋转 PDF', 'tool_merge': '合并 PDF', 'tool_split': '分割 PDF',
+                'tool_editor': '批注编辑 PDF', 'tool_sign': '签署 PDF', 'tool_rotate': '旋转 PDF', 'tool_merge': '合并 PDF', 'tool_split': '分割 PDF',
                 'tool_watermark': '添加水印', 'tool_addimg': '在 PDF 中添加图像', 'tool_compressimg': '压缩图像',
                 'tool_compress': '压缩 PDF', 'tool_delete': '删除页面',
                 'tool_pdf2jpg': 'PDF 转 JPG', 'tool_pdf2png': 'PDF 转 PNG',
@@ -922,7 +936,7 @@
                 'drop_single': '将文件拖放至此', 'drop_multi': '将多个文件拖放至此',
                 'btn_select_pdf': '选择 PDF 文件', 'btn_select_pdfs': '选择多个 PDF 文件', 'btn_select_imgs': '选择图片文件',
                 'ed_create_blank': '新建空白 PDF', 'ed_download': '下载 PDF', 'ed_add_page': '添加页面', 'ed_blank_page': '空白页', 'ed_from_file': '从文件',
-                'ed_undo': '撤销', 'ed_redo': '重做', 'ed_add_text': '添加文字', 'ed_edit_text': '编辑文字', 'ed_signature': '签名', 'ed_draw': '手绘',
+                'ed_undo': '撤销', 'ed_redo': '重做', 'ed_add_text': '添加文字', 'ed_edit_text': '旧版文字覆盖', 'ed_signature': '签名', 'ed_draw': '手绘',
                 'ed_line': '直线', 'ed_arrow': '箭头', 'ed_rect': '矩形框', 'ed_circle': '圆形框', 'ed_whiteout': '白色遮罩',
                 'ed_highlight': '文字荧光标示', 'ed_image': '图像', 'ed_stamp': '印章', 'ed_link': '链接', 'ed_note': '备注',
                 'ed_manage_pages': '管理页面', 'ed_print': '打印', 'ed_search': '搜索', 'ed_stroke': '粗细',
@@ -944,7 +958,7 @@
             },
             'en': {
                 'nav_all_tools': 'All Tools', 'cat_edit_pdf': 'Edit PDF', 'cat_from_pdf': 'Convert from PDF', 'cat_to_pdf': 'Convert to PDF',
-                'tool_editor': 'Edit PDF', 'tool_sign': 'Sign PDF', 'tool_rotate': 'Rotate PDF', 'tool_merge': 'Merge PDF', 'tool_split': 'Split PDF',
+                'tool_editor': 'Annotate PDF', 'tool_sign': 'Sign PDF', 'tool_rotate': 'Rotate PDF', 'tool_merge': 'Merge PDF', 'tool_split': 'Split PDF',
                 'tool_watermark': 'Add Watermark', 'tool_addimg': 'Add Image to PDF', 'tool_compressimg': 'Compress Image',
                 'tool_compress': 'Compress PDF', 'tool_delete': 'Delete Pages',
                 'tool_pdf2jpg': 'PDF to JPG', 'tool_pdf2png': 'PDF to PNG',
@@ -953,7 +967,7 @@
                 'drop_single': 'Drop file here', 'drop_multi': 'Drop multiple files here',
                 'btn_select_pdf': 'Select PDF File', 'btn_select_pdfs': 'Select Multiple PDFs', 'btn_select_imgs': 'Select Image Files',
                 'ed_create_blank': 'Create Blank PDF', 'ed_download': 'Download PDF', 'ed_add_page': 'Add Page', 'ed_blank_page': 'Blank Page', 'ed_from_file': 'From File',
-                'ed_undo': 'Undo', 'ed_redo': 'Redo', 'ed_add_text': 'Add Text', 'ed_edit_text': 'Edit Text', 'ed_signature': 'Sign', 'ed_draw': 'Draw',
+                'ed_undo': 'Undo', 'ed_redo': 'Redo', 'ed_add_text': 'Add Text', 'ed_edit_text': 'Legacy text overlay', 'ed_signature': 'Sign', 'ed_draw': 'Draw',
                 'ed_line': 'Line', 'ed_arrow': 'Arrow', 'ed_rect': 'Rectangle', 'ed_circle': 'Circle', 'ed_whiteout': 'Whiteout',
                 'ed_highlight': 'Highlight', 'ed_image': 'Image', 'ed_stamp': 'Stamp', 'ed_link': 'Link', 'ed_note': 'Note',
                 'ed_manage_pages': 'Manage Pages', 'ed_print': 'Print', 'ed_search': 'Search', 'ed_stroke': 'Stroke',
@@ -1131,6 +1145,8 @@
         });
 
         function switchTool(tool) {
+            if (typeof N !== "undefined" && N.busy) return;
+            if (typeof nativeHide === "function") nativeHide();
             currentTool = tool;
             const cfg = toolsConfig[tool] || toolsConfig['editor'];
 
@@ -4048,7 +4064,7 @@
 
                 // 若為原生向量 PDF 頁面：優先直接從內容串流移除舊字指令（無任何方塊遮罩）；僅對無法解析的外部 XObject 才使用極細筆劃高度補底
                 if (canUseVectorSource && page.erasedRegions && page.erasedRegions.length > 0) {
-                    const strippedIds = removeTextOperatorsFromPdfPage(outPdf, pdfPage, page.erasedRegions);
+                    const strippedIds = new Set(); // Legacy visual overlay only; use native editor for actual text removal.
                     for (const reg of page.erasedRegions) {
                         if (!strippedIds.has(reg.id)) {
                             const glyphTop = reg.y + reg.h * 0.14;
@@ -4606,5 +4622,85 @@
         // 初始化語言
         setLanguage('zh-HK');
     </script>
+<script>
+const N={mode:'edit',token:null,page:0,pages:0,zoom:1,data:null,selected:null,add:false,point:null,busy:false,name:''};
+const np=id=>document.getElementById('np-'+id);
+function nativeStatus(msg='',error=false){np('status').textContent=msg;np('status').classList.toggle('err',error)}
+// All PDF bytes remain in this browser. MuPDF.js (AGPL) is loaded on demand.
+const browserSession={data:null,undo:[],redo:[],token:null};
+let pdfEnginePromise;
+async function browserEngine(){
+ if(!pdfEnginePromise) pdfEnginePromise=(async()=>{
+  const urls=['https://cdn.jsdelivr.net/npm/mupdf@1.28.6/dist/mupdf.js','https://unpkg.com/mupdf@1.28.6/dist/mupdf.js'];
+  let last;for(const url of urls){try{const mod=await import(url);const m=mod.default||mod;if(m.Document&&m.PDFDocument)return m;throw Error('PDF 引擎載入不完整')}catch(e){last=e}}
+  throw Error('無法載入瀏覽器 PDF 引擎。請確認網絡可連接 jsDelivr 或 unpkg，再重試。'+(last?.message?'\n'+last.message:''));
+ })().catch(e=>{pdfEnginePromise=null;throw e});
+ return pdfEnginePromise;
+}
+function bpDispose(o){try{o?.destroy?.()}catch{}}
+function bpBytes(o){return new Uint8Array(o?.asUint8Array?o.asUint8Array():o).slice()}
+function bpSave(d){const b=d.saveToBuffer('garbage=4,compress=yes,encrypt=none');try{return bpBytes(b)}finally{bpDispose(b)}}
+function bpOpen(m,bytes,pw=''){const d=m.Document.openDocument(bytes,'application/pdf');try{if(!d.isPDF())throw Error('請選擇 PDF 文件。');if(d.needsPassword()&&!d.authenticatePassword(pw))throw Error('此 PDF 設有開啟密碼，免輸入密碼版本無法處理。請先使用正確密碼解除開啟保護。');return d}catch(e){bpDispose(d);throw e}}
+function bpB64(bytes){let s='';for(let i=0;i<bytes.length;i+=16384)s+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(s)}
+function bpColor(v){if(typeof v==='number')return '#'+(v&0xffffff).toString(16).padStart(6,'0');if(v?.length>=3)return '#'+Array.from(v).slice(0,3).map(x=>Math.round(Math.max(0,Math.min(1,x))*255).toString(16).padStart(2,'0')).join('');return '#000000'}
+function bpExtract(p){
+ const items=[],all=[];let group=[],horizontal=false;const st=p.toStructuredText('preserve-ligatures');
+ function flush(){if(!group.length)return;const g=group;group=[];const a=g[0],r=[Math.min(...g.map(c=>c.rect[0])),Math.min(...g.map(c=>c.rect[1])),Math.max(...g.map(c=>c.rect[2])),Math.max(...g.map(c=>c.rect[3]))];if(r[2]>r[0]&&r[3]>r[1])items.push({...a,id:items.length,text:g.map(c=>c.c).join(''),rect:r,chars:g});}
+ try{st.walk({beginLine(_b,w,dir){flush();horizontal=w===0&&dir[0]>.99&&Math.abs(dir[1])<.01},endLine(){flush()},onChar(c,origin,font,size,q,color){if(!/\s/u.test(c))all.push(c);if(!horizontal)return;if(/\s/u.test(c)){flush();return}const name=font.getName(),rgb=bpColor(color);const x=[q[0],q[2],q[4],q[6]],y=[q[1],q[3],q[5],q[7]],rect=[Math.min(...x),Math.min(...y),Math.max(...x),Math.max(...y)];if(group.length&&(group[0].font!==name||Math.abs(group[0].size-size)>.1||group[0].color!==rgb||rect[0]-group.at(-1).rect[2]>size*.45||group.length>=120))flush();group.push({c,origin:[...origin],font:name,size,color:rgb,rect})}});flush();return {items,all}}finally{bpDispose(st)}
+}
+function bpCounts(chars){const a=new Map();for(const c of chars)for(const x of c)if(!/\s/u.test(x))a.set(x,(a.get(x)||0)+1);return a}
+function bpEqual(a,b){for(const k of new Set([...a.keys(),...b.keys()]))if((a.get(k)||0)!==(b.get(k)||0))return false;return true}
+function bpAdjust(map,text,delta){for(const c of text)if(!/\s/u.test(c))map.set(c,(map.get(c)||0)+delta)}
+function bpInv([a,b,c,d,e,f]){const det=a*d-b*c;if(!det)throw Error('無法轉換頁面座標');return [d/det,-b/det,-c/det,a/det,(c*f-d*e)/det,(b*e-a*f)/det]}
+function bpDict(d,src){const out=d.newDictionary();if(src&&!src.isNull())src.forEach((v,k)=>out.put(k,v));return out}
+// PDF.js viewport supplies the exact PDF-to-display matrix, including CropBox and rotation.
+async function bpMatrix(data,page){const t=pdfjsLib.getDocument({data:data.slice(),isEvalSupported:false});try{const doc=await t.promise,p=await doc.getPage(page+1);return p.getViewport({scale:1}).transform}finally{await t.destroy()}}
+function bpInsert(m,d,p,r,item,mat,bounds){
+ const text=r.text;if(!text)return;let size=Number(r.size);if(!Number.isFinite(size)||size<1||size>300)throw Error('字體大小必須為 1–300 pt。');if(!/^#[\da-f]{6}$/i.test(r.color))throw Error('顏色無效。');
+ const origin=item?item.origin:[r.x+bounds[0],r.y+bounds[1]];if(origin.some(v=>!Number.isFinite(v))||origin[0]<bounds[0]||origin[0]>=bounds[2]||origin[1]<bounds[1]||origin[1]>bounds[3])throw Error('請選擇頁面內的文字位置。');
+ const cjk=/[^\x20-\x7e]/.test(text);if(cjk&&Array.from(text).some(c=>c.codePointAt(0)>65535))throw Error('暫不支援此 Unicode 字元。');const old=item?.font||'';const bold=/bold|black|heavy/i.test(old),italic=/italic|oblique/i.test(old),family=/courier|mono/i.test(old)?'Courier':/times|serif|ming|song/i.test(old)?'Times':'Helvetica';let fontName=family==='Times'?(bold?(italic?'Times-BoldItalic':'Times-Bold'):(italic?'Times-Italic':'Times-Roman')):family+(bold?(italic?'-BoldOblique':'-Bold'):(italic?'-Oblique':''));
+ const font=new m.Font(cjk?'zh-Hant':fontName);try{let units=0;for(const c of text){const glyph=font.encodeCharacter(c);if(!glyph&&c!==' ')throw Error('替代字型不支援字元：'+c);units+=cjk?1:font.advanceGlyph(glyph,0)}if(!(units>0))throw Error('無法計算文字寬度。');const room=item&&r.fit?item.rect[2]-item.rect[0]:bounds[2]-origin[0]-1;if(size*units>room){if(item&&r.fit)size=room/units;else throw Error('文字超出頁面右側，請縮小字體。')}if(size<1)throw Error('文字過長，請縮短內容。');
+ const resource=cjk?d.addCJKFont(font,'zh-Hant',0,'sans-serif'):d.addSimpleFont(font,'Latin');const obj=p.getObject(),res=bpDict(d,obj.getInheritable('Resources')),fonts=bpDict(d,res.get('Font'));let key='BrowserEdit';for(let n=1;!fonts.get(key).isNull();n++)key='BrowserEdit'+n;fonts.put(key,resource);res.put('Font',fonts);obj.put('Resources',res);
+ // Display coordinate system has y downward, while PDF text uses y upward.
+ const [a,b,c,e,tx,ty]=bpInv(mat),x=origin[0]-bounds[0],y=origin[1]-bounds[1];const tm=[a,b,-c,-e,a*x+c*y+tx,b*x+e*y+ty];const color=[1,3,5].map(i=>parseInt(r.color.slice(i,i+2),16)/255);const hex=Array.from(text).map(c=>c.charCodeAt(0).toString(16).padStart(cjk?4:2,'0')).join('');const fmt=n=>Number(n.toFixed(7)).toString();const stream='\nq\nBT /'+key+' '+fmt(size)+' Tf '+color.map(fmt).join(' ')+' rg '+tm.map(fmt).join(' ')+' Tm <'+hex+'> Tj ET\nQ\n';
+ const existing=obj.get('Contents'),arr=d.newArray();if(!existing.isNull()){arr.push(d.addStream('q\n',{}));if(existing.isArray())existing.forEach(v=>arr.push(v));else arr.push(existing);arr.push(d.addStream('\nQ\n',{}))}arr.push(d.addStream(stream,{}));obj.put('Contents',arr);
+ }finally{bpDispose(font)}
+}
+async function bpEdit(m,data,r){
+ if(typeof r.text!=='string'||r.text.length>4000||/[\r\n\t]/.test(r.text))throw Error('每次請輸入單行文字（最多 4000 字元）。');
+ const matrix=r.text?await bpMatrix(data,r.page):null,d=bpOpen(m,data);let p;try{p=d.loadPage(r.page);const bounds=p.getBounds(),before=bpExtract(p),item=r.add?null:before.items[r.id];if(!r.add&&!item)throw Error('找不到原文字，請重新選取。');const expected=bpCounts(before.all);if(item){bpAdjust(expected,item.text,-1);if(p.getAnnotations().some(a=>/redact/i.test(a.getType())))throw Error('此頁已有待套用的遮蔽標註，為避免誤刪，暫停修改。');for(const ch of item.chars){const [x0,y0,x1,y1]=ch.rect,cx=(x0+x1)/2,cy=(y0+y1)/2,dx=Math.max(.001,(x1-x0)*.045),dy=Math.max(.001,(y1-y0)*.045);const a=p.createAnnotation('Redact');a.setRect([cx-dx,cy-dy,cx+dx,cy+dy]);}p.applyRedactions(false,m.PDFPage.REDACT_IMAGE_NONE,m.PDFPage.REDACT_LINE_ART_NONE,m.PDFPage.REDACT_TEXT_REMOVE);bpDispose(p);p=d.loadPage(r.page);if(!bpEqual(expected,bpCounts(bpExtract(p).all)))throw Error('文字重疊或特殊編碼，無法安全移除。原文件未變更。');}
+ if(r.text){bpInsert(m,d,p,r,item,matrix,bounds);bpAdjust(expected,r.text,1)}const result=bpSave(d);const check=bpOpen(m,result);let cp;try{cp=check.loadPage(r.page);const actual=bpExtract(cp);if(!bpEqual(expected,bpCounts(actual.all)))throw Error('輸出文字驗證失敗；原文件未變更。');if(r.text){const origin=item?item.origin:[r.x+bounds[0],r.y+bounds[1]];const near=actual.items.some(i=>Math.hypot(i.origin[0]-origin[0],i.origin[1]-origin[1])<2);if(!near)throw Error('輸出座標驗證失敗；原文件未變更。')}}finally{bpDispose(cp);bpDispose(check)}return result;
+ }finally{bpDispose(p);bpDispose(d)}
+}
+function bpPage(m,data,n){const d=bpOpen(m,data);let p,px,png;try{p=d.loadPage(n);const b=p.getBounds(),w=b[2]-b[0],h=b[3]-b[1],scale=Math.min(2.5,3000/Math.max(w,h));px=p.toPixmap([scale,0,0,scale,-b[0]*scale,-b[1]*scale],m.ColorSpace.DeviceRGB,false,true);png=px.asPNG();const items=bpExtract(p).items.map(i=>({id:i.id,text:i.text,size:i.size,color:i.color,font:i.font,display:i.rect.map((v,j)=>v-b[j%2])}));return {image:bpB64(bpBytes(png)),width:w,height:h,items,undo:!!browserSession.undo.length,redo:!!browserSession.redo.length}}finally{bpDispose(png);bpDispose(px);bpDispose(p);bpDispose(d)}}
+async function nativeApi(action,body,binary=false){
+ const s=browserSession;if(action==='close'){s.data=null;s.undo=[];s.redo=[];s.token=null;return {ok:true}}const m=await browserEngine();
+ if(action==='open'||action==='unlock'){const bytes=body.data instanceof Uint8Array?body.data:Uint8Array.from(atob(body.data),c=>c.charCodeAt(0)),d=bpOpen(m,bytes,'');let data,pages;try{pages=d.countPages();data=bpSave(d)}finally{bpDispose(d)}const check=bpOpen(m,data);try{if(check.needsPassword()||!check.getTrailer().get('Encrypt').isNull()||check.countPages()!==pages)throw Error('解鎖結果驗證失敗。')}finally{bpDispose(check)}if(action==='unlock')return new Blob([data],{type:'application/pdf'});s.data=data;s.undo=[];s.redo=[];s.token='browser-local';return {token:s.token,pages}}
+ if(!s.data||s.token!==body.token)throw Error('請重新開啟 PDF。');if(action==='download')return new Blob([s.data],{type:'application/pdf'});
+ if(action==='edit'){const data=await bpEdit(m,s.data,body);const preview=bpPage(m,data,body.page);s.undo.push(s.data);while(s.undo.length>10||s.undo.reduce((n,b)=>n+b.length,0)>100*1024*1024)s.undo.shift();s.redo=[];s.data=data;return {...preview,undo:!!s.undo.length,redo:false}}
+ if(action==='undo'||action==='redo'){const other=action==='undo'?'redo':'undo';if(s[action].length){const next=s[action].at(-1),preview=bpPage(m,next,body.page);s[other].push(s.data);s.data=s[action].pop();return {...preview,undo:!!s.undo.length,redo:!!s.redo.length}}}
+ return bpPage(m,s.data,body.page);
+}
+
+function nativeRelease(){if(N.token){nativeApi('close',{token:N.token}).catch(()=>{});N.token=null}N.data=null;N.selected=null;N.add=false;N.point=null;np('file').value='';np('paper').replaceChildren();np('text').value=''}
+function nativeHide(){if(N.busy)return;nativeRelease();document.getElementById('native-root').hidden=true;document.querySelectorAll('.native-tab').forEach(x=>x.classList.remove('on'))}
+function nativeShow(mode){if(N.busy)return;nativeRelease();N.mode=mode;document.getElementById('native-root').hidden=false;document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.native-tab').forEach(x=>x.classList.remove('on'));document.getElementById('native-'+mode+'-tab').classList.add('on');['hero-section','drop-zone-container','processing-zone','editor-zone','footer-features','error-msg','all-tools-drawer'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));np('open').hidden=false;np('work').hidden=true;np('title').textContent=mode==='edit'?'精準編輯 PDF':'解鎖 PDF';np('desc').textContent=mode==='edit'?'直接選取 PDF 原生文字，修改、刪除或加入可搜尋文字，保留其他頁面內容。':'直接移除可開啟 PDF 的編輯、列印及複製限制，保留可搜尋文字、頁面和向量圖形。不支援需要開啟密碼的文件。';np('open-btn').textContent=mode==='edit'?'開啟 PDF':'解鎖並下載';nativeStatus()}
+function nativeBusy(b){N.busy=b;np('open-btn').disabled=b;np('save').disabled=b;np('apply').disabled=b;np('delete').disabled=b;np('prev').disabled=b||N.page===0;np('next').disabled=b||N.page>=N.pages-1;np('undo').disabled=b||!N.data?.undo;np('redo').disabled=b||!N.data?.redo;np('add').disabled=b}
+function nativeBlob(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1500)}
+function nativeBase64(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result.split(',')[1]);r.onerror=()=>reject(Error('無法讀取檔案'));r.readAsDataURL(file)})}
+async function nativeOpen(){if(N.busy)return;const file=np('file').files[0];if(!file)return nativeStatus('請選擇 PDF 檔案。',true);if(file.size>100*1024*1024)return nativeStatus('檔案超過 100 MB。',true);nativeBusy(true);nativeStatus('正在載入瀏覽器引擎及讀取 PDF…');try{const body={data:new Uint8Array(await file.arrayBuffer())};N.name=file.name;if(N.mode==='unlock'){const blob=await nativeApi('unlock',body,true);nativeBlob(blob,file.name.replace(/\.pdf$/i,'')+'_unlocked.pdf');nativeStatus('已產生解鎖 PDF。');return}const j=await nativeApi('open',body);N.token=j.token;N.pages=j.pages;N.page=0;N.zoom=1;await nativeLoad();np('name').textContent=N.name;np('open').hidden=true;np('work').hidden=false;nativeStatus('點擊文字開始編輯。')}catch(e){nativeStatus(e.message,true)}finally{nativeBusy(false)}}
+async function nativeLoad(action='page',extra={}){const d=await nativeApi(action,{token:N.token,page:N.page,...extra});N.data=d;N.selected=null;N.point=null;N.add=false;np('add').textContent='＋新增文字';np('fields').disabled=true;np('selection').textContent=d.items.length?'請點擊文字，或使用新增文字。':'此頁沒有可編輯的水平文字，可能是掃描頁。可新增文字，但不會自動辨識原文。';np('count').textContent=(N.page+1)+' / '+N.pages;nativeDraw()}
+function nativeDraw(){if(!N.data)return;const d=N.data,p=np('paper');p.replaceChildren();p.style.width=d.width*N.zoom+'px';p.style.height=d.height*N.zoom+'px';p.classList.toggle('np-add',N.add);const img=document.createElement('img');img.src='data:image/png;base64,'+d.image;img.alt='PDF 頁面預覽';p.append(img);const q=np('search').value.toLowerCase();if(!N.add)for(const item of d.items){const [x0,y0,x1,y1]=item.display;const b=document.createElement('button');b.type='button';b.className='np-hit'+(N.selected?.id===item.id?' selected':'');b.style.cssText=`left:${x0*N.zoom}px;top:${y0*N.zoom}px;width:${(x1-x0)*N.zoom}px;height:${(y1-y0)*N.zoom}px;`;if(q&&item.text.toLowerCase().includes(q))b.style.background='#facc1566';b.title=item.text;b.setAttribute('aria-label','編輯 '+item.text);b.onclick=e=>{e.stopPropagation();if(!N.busy)nativeSelect(item)};p.append(b)}np('zoom').textContent=Math.round(N.zoom*100)+'%';p.onclick=e=>{if(!N.add||N.busy)return;const r=p.getBoundingClientRect();N.point={x:(e.clientX-r.left)/N.zoom,y:(e.clientY-r.top)/N.zoom};N.selected=null;np('fields').disabled=false;np('text').value='';np('size').value=12;np('color').value='#000000';np('fit').checked=false;np('fit').disabled=true;np('delete').disabled=true;np('selection').textContent='新增文字：點選位置為文字基線。';np('text').focus()}}
+function nativeSelect(item){N.selected=item;N.point=null;np('fields').disabled=false;np('text').value=item.text;np('size').value=Number(item.size.toFixed(2));np('color').value=item.color;np('fit').disabled=false;np('fit').checked=true;np('delete').disabled=false;np('selection').textContent='原字型：'+item.font+'｜原文字：'+item.text;nativeDraw();np('text').focus();np('text').select()}
+function nativeAdd(){if(N.busy||!N.data)return;N.add=!N.add;N.selected=null;N.point=null;np('fields').disabled=true;np('add').textContent=N.add?'取消新增':'＋新增文字';np('selection').textContent=N.add?'請點擊頁面，選擇新增文字的基線位置。':'請選取原文字。';nativeDraw()}
+function nativeZoom(delta){N.zoom=Math.min(3,Math.max(.4,N.zoom+delta));nativeDraw()}
+async function nativePage(delta){if(N.busy)return;const old=N.page;N.page=Math.max(0,Math.min(N.pages-1,N.page+delta));nativeBusy(true);try{await nativeLoad();np('scroll').scrollTop=0;nativeStatus()}catch(e){N.page=old;nativeStatus(e.message,true)}finally{nativeBusy(false)}}
+async function nativeHistory(action){if(N.busy)return;nativeBusy(true);try{await nativeLoad(action);nativeStatus(action==='undo'?'已復原':'已重做')}catch(e){nativeStatus(e.message,true)}finally{nativeBusy(false)}}
+async function nativeApply(remove=false){if(N.busy||(!N.selected&&!N.point))return;const text=remove?'':np('text').value;if(!text&&N.point)return nativeStatus('請輸入新文字。',true);const extra={text,size:Number(np('size').value),color:np('color').value,fit:np('fit').checked,...(N.selected?{id:N.selected.id}:{add:true,...N.point})};nativeBusy(true);try{await nativeLoad('edit',extra);nativeStatus('已套用原生文字修改。可下載 PDF 或復原。')}catch(e){nativeStatus(e.message,true)}finally{nativeBusy(false)}}
+function nativeDelete(){if(N.selected)nativeApply(true)}
+async function nativeDownload(){if(N.busy)return;nativeBusy(true);try{const b=await nativeApi('download',{token:N.token},true);nativeBlob(b,N.name.replace(/\.pdf$/i,'')+'_edited.pdf');nativeStatus('已產生編輯後的 PDF。')}catch(e){nativeStatus(e.message,true)}finally{nativeBusy(false)}}
+nativeShow('edit');
+</script>
+<!-- MuPDF.js is loaded externally under AGPL-3.0-or-later. Source: https://github.com/ArtifexSoftware/mupdf.js/ -->
 </body>
 </html>
